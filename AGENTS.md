@@ -1,0 +1,71 @@
+# Repository Agent Instructions
+
+These instructions apply to the Sumi Docs Web repository.
+
+## Project contract
+
+- Classification: static Astro and Starlight documentation site
+- Runtime: Node.js 22.12.0 or newer
+- Package manager: npm with a committed `package-lock.json`
+- Output: static files under `dist/`
+- Machine projection: `dist/_mcp/`
+
+The site is a sibling project of Sumi-Docs-MCP, not a workspace package. The
+projects share a published content contract and must not import each other's
+runtime source files.
+
+## Content and trust
+
+Only trusted, reviewed Markdown and MDX may be compiled by Astro. Never execute
+remote or user-supplied MDX. Keep credentials, private URLs, and machine-local
+paths out of published content and frontmatter.
+
+Every machine-readable document must have an explicit entry in
+`astro.config.mjs`. The public MCP manifest remains the strict version 1 shape:
+
+```json
+{
+  "version": 1,
+  "documents": ["getting-started.md"],
+  "openapi": "openapi.json"
+}
+```
+
+Do not add route objects or other fields to that manifest. Human route mappings
+belong in the generated `sumi-docs-routes.json` verification artifact.
+
+## Ownership
+
+- `src/content/docs/`: reviewed human and machine documentation source
+- `src/assets/`: project visual assets
+- `src/styles/`: restrained Starlight customization
+- `integrations/`: bounded build-time publishing behavior
+- `scripts/`: deterministic validation and development helpers
+- `tests/`: publishing contract tests
+- `public/`: reviewed static inputs, including OpenAPI
+
+Do not add Sumi-Docs-MCP parser, VFS, transport, or client code to this project.
+A browser Agent requires a separate BFF architecture decision; it must not embed
+model credentials or try to connect directly to stdio.
+
+## Required validation
+
+```powershell
+npm test
+npm run build
+```
+
+When the sibling MCP checkout is available and built, also run:
+
+```powershell
+npm run verify:mcp
+```
+
+Visually verify desktop and mobile output before handoff. Generated `dist/`,
+`.astro/`, `node_modules/`, coverage, logs, and temporary image work remain
+ignored.
+
+## Documentation style
+
+Use direct, factual language. Avoid emoji status markers, fictional approvals,
+agent signatures, placeholder domains presented as live, and unmeasured claims.
