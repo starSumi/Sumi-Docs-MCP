@@ -117,6 +117,26 @@ const requests = [
       _meta: meta,
     },
   },
+  {
+    jsonrpc: "2.0",
+    id: 6,
+    method: "tools/call",
+    params: {
+      name: "search_docs",
+      arguments: { query: "远程文档源" },
+      _meta: meta,
+    },
+  },
+  {
+    jsonrpc: "2.0",
+    id: 7,
+    method: "tools/call",
+    params: {
+      name: "fetch_doc",
+      arguments: { path: "zh-cn/getting-started.md" },
+      _meta: meta,
+    },
+  },
 ];
 
 try {
@@ -140,14 +160,24 @@ try {
   const parseToolResult = (id) =>
     JSON.parse(responses.get(id)?.result?.content?.[0]?.text ?? "null");
   const listed = parseToolResult(2);
-  assert.equal(listed.length, 4);
+  assert.equal(listed.length, 8);
   assert.equal(
     listed.find(({ path }) => path === "getting-started.md")?.url,
     `${baseUrl}getting-started`,
   );
+  assert.equal(
+    listed.find(({ path }) => path === "zh-cn/getting-started.md")?.url,
+    `${baseUrl}zh-cn/getting-started`,
+  );
   assert.equal(parseToolResult(3)[0]?.path, "remote-sources.md");
   assert.match(parseToolResult(4)?.content ?? "", /four read-only tools/i);
   assert.deepEqual(Object.keys(parseToolResult(5)?.paths ?? {}), ["/health"]);
+  const chineseSearchResults = parseToolResult(6);
+  assert.equal(chineseSearchResults[0]?.path, "zh-cn/remote-sources.md");
+  assert.ok(
+    chineseSearchResults.every(({ path }) => path.startsWith("zh-cn/")),
+  );
+  assert.match(parseToolResult(7)?.content ?? "", /四个只读工具/);
 
   const routeMap = JSON.parse(
     await readFile(
@@ -164,7 +194,7 @@ try {
   }
 
   console.log(
-    "Verified the published corpus through all four MCP tools and 4 page URLs.",
+    "Verified the published corpus through all four MCP tools and 8 page URLs.",
   );
 } finally {
   lines.close();

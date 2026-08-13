@@ -4,6 +4,11 @@ Human-facing documentation for Sumi-Docs-MCP, built with Astro and Starlight.
 The site also publishes the strict raw-document manifest consumed by the MCP
 server's remote source mode.
 
+English is served from the root path. Simplified Chinese is available under
+`/zh-cn/`, with Starlight's language selector connecting equivalent pages.
+The built-in theme selector supports light, dark, and automatic system modes;
+code blocks follow the selected site theme.
+
 ## Development
 
 Requires Node.js 22.12.0 or newer and npm 11.
@@ -50,4 +55,5 @@ npm run verify:mcp
 
 The site is intentionally a separate project from Sumi-Docs-MCP. They share a
 versioned publishing contract, not runtime source packages. See ADR-0001 and
-ADR-0002 in the Sumi-Docs-MCP project.
+ADR-0002 in the Sumi-Docs-MCP project. ADR-0003 keeps manifest v1 path-only and
+defines the compatibility boundary for a future structured locale projection.

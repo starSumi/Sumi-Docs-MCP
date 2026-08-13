@@ -9,6 +9,8 @@ These instructions apply to the Sumi Docs Web repository.
 - Package manager: npm with a committed `package-lock.json`
 - Output: static files under `dist/`
 - Machine projection: `dist/_mcp/`
+- Human locales: English at `/`, Simplified Chinese at `/zh-cn/`
+- Theme modes: light, dark, and automatic system preference
 
 The site is a sibling project of Sumi-Docs-MCP, not a workspace package. The
 projects share a published content contract and must not import each other's
