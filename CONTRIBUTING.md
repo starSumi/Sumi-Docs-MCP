@@ -8,6 +8,11 @@ Read [docs/architecture.md](docs/architecture.md),
 before changing those boundaries. `AGENTS.md` contains the matching execution
 rules used by repository automation.
 
+Start with [the contribution workflow](docs/contributing.md) for issue triage,
+branch and pull request expectations, review readiness, validation evidence,
+and merge policy. Changes involving client Skills or agent orchestration must
+also follow [the Skill and orchestration boundary](docs/skills-and-orchestration.md).
+
 ## Workflow
 
 1. Reproduce a bug with a failing test or define the observable acceptance

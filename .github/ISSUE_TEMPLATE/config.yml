@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/starSumi/Sumi-Docs-MCP/security/policy
+    about: Report vulnerabilities through the private security process.

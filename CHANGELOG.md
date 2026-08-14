@@ -31,3 +31,9 @@ This file records user-visible changes. Internal phase notes are retained under
   the previous read-only snapshot.
 - Added an exact MCP tool reference and documented the authoritative repository
   initialization boundary.
+- Added issue and pull request templates plus a reviewable contribution
+  lifecycle.
+- Documented the boundary between client Skills, the stateless MCP server,
+  agent orchestration, and the human documentation site.
+- Expanded the self-hosted example corpus with contribution and integration
+  guidance.

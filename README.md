@@ -138,6 +138,8 @@ environment variables.
 - [Getting started](docs/getting-started.md)
 - [Configuration and environments](docs/configuration.md)
 - [Remote documentation sources](docs/remote-sources.md)
+- [Contribution workflow](docs/contributing.md)
+- [Skills, MCP, and orchestration](docs/skills-and-orchestration.md)
 - [Development and validation](docs/development.md)
 - [Git workflow and commit policy](docs/git-workflow.md)
 - [Release candidates and human acceptance](docs/releasing.md)

@@ -11,6 +11,8 @@ test("the checked-in basic example is a usable documentation corpus", async () =
   const paths = vault.listTree().map((document) => document.path);
   assert.ok(paths.includes("api/authentication.mdx"));
   assert.ok(paths.includes("getting-started.md"));
+  assert.ok(paths.includes("contributing.md"));
+  assert.ok(paths.includes("skills-and-orchestration.md"));
   assert.ok(paths.includes("remote-sources.md"));
   assert.equal(vault.search("token")[0]?.path, "api/authentication.mdx");
   assert.match(
@@ -26,6 +28,7 @@ test("self-hosted operator documents stay synchronized", async () => {
   for (const file of [
     "architecture.md",
     "configuration.md",
+    "contributing.md",
     "decisions/0001-astro-starlight-dual-surface.md",
     "decisions/0002-polyrepo-and-package-manager.md",
     "decisions/0003-localized-content-projection.md",
@@ -35,6 +38,7 @@ test("self-hosted operator documents stay synchronized", async () => {
     "git-workflow.md",
     "releasing.md",
     "remote-sources.md",
+    "skills-and-orchestration.md",
     "tool-reference.md",
     "troubleshooting.md",
   ]) {
