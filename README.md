@@ -51,9 +51,28 @@ When the sibling MCP checkout is built, exercise the complete boundary locally:
 npm run verify:mcp
 ```
 
+## Deployment candidates
+
+Production candidates require an explicit public HTTPS origin:
+
+```powershell
+$env:SITE_URL = "https://docs.example.com"
+npm run verify:release
+```
+
+The manual `Site candidate` workflow builds an immutable static archive for a
+specific commit, records its checksum, and attaches GitHub provenance. It does
+not deploy the site. See [docs/deployment.md](docs/deployment.md) for the human
+acceptance and rollback procedure.
+
 ## Architecture
 
 The site is intentionally a separate project from Sumi-Docs-MCP. They share a
 versioned publishing contract, not runtime source packages. See ADR-0001 and
 ADR-0002 in the Sumi-Docs-MCP project. ADR-0003 keeps manifest v1 path-only and
 defines the compatibility boundary for a future structured locale projection.
+
+## Project policy
+
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md),
+[CHANGELOG.md](CHANGELOG.md), and [LICENSE](LICENSE).

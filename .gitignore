@@ -7,6 +7,7 @@ dist/
 !.env.example
 !.env.*.example
 coverage/
+artifacts/
 tmp/
 .DS_Store
 .vscode/

@@ -57,6 +57,11 @@ npm test
 npm run build
 ```
 
+For a public deployment candidate, also run `npm run verify:release` with an
+explicit public HTTPS `SITE_URL`. A candidate workflow may package verified
+`dist/` output, but it must not deploy without the repository's human acceptance
+and environment controls.
+
 When the sibling MCP checkout is available and built, also run:
 
 ```powershell
