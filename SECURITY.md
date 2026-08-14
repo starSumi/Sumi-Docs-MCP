@@ -7,10 +7,10 @@ fixes are applied to the current source branch.
 
 ## Reporting
 
-No external private reporting channel is configured in this checkout. Enable
-GitHub private vulnerability reporting or publish another private security
-contact before making the repository public. Do not include credentials,
-private content, or exploit details in a public issue.
+Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/starSumi/sumi-docs-web/security/advisories/new).
+Do not include credentials, private content, or exploit details in a public
+issue. The repository owner will acknowledge a report and coordinate a fix
+before disclosure.
 
 ## Trust boundary
 

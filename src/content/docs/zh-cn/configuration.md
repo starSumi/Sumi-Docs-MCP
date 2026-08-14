@@ -13,7 +13,7 @@ sumi-docs-mcp serve <docs-source> [--openapi <path>] [--base-url <url>] [--trans
 
 `<docs-source>` 决定机器读取的内容，可以是本地目录，也可以是远程 HTTPS manifest 或其目录地址。
 
-`--base-url` 决定 MCP 结果中供人打开的 URL。它不会托管内容，也不会改变 MCP 传输方式。
+`--base-url` 决定 MCP 结果中供人打开的 URL。它不会托管内容，也不会改变 MCP 传输方式。Markdown 扩展名会被移除，末段为 `index.md` 或 `index.mdx` 时映射到所在目录页面。
 
 ## 开发和分发
 

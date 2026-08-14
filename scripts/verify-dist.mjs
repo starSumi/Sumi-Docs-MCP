@@ -37,7 +37,7 @@ for (const document of manifest.documents) {
   assert.match(document, /^[a-zA-Z0-9_/-]+\.mdx?$/);
   await access(resolve(machineRoot, ...document.split("/")));
   const page = routeMap.routes[document];
-  assert.match(page, /^\/[a-zA-Z0-9_/-]*\/$/);
+  assert.match(page, /^(?:\/$|\/[a-zA-Z0-9_/-]+\/$)/);
   await access(resolve(outputRoot, ...pageFile(page).split("/")));
 }
 

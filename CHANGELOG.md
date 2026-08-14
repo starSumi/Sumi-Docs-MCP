@@ -13,3 +13,7 @@ This file records user-visible changes to the documentation site.
 - Added cross-project verification of all four MCP tools and published page
   URLs.
 - Added dependency, commit-message, and release-candidate quality gates.
+- Added repository metadata, the security-reporting entry point, and a branded
+  favicon for the public source distribution.
+- Expanded the bilingual showcase corpus with the overview, MCP tool reference,
+  troubleshooting, development, and release handbooks.

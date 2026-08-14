@@ -160,7 +160,7 @@ try {
   const parseToolResult = (id) =>
     JSON.parse(responses.get(id)?.result?.content?.[0]?.text ?? "null");
   const listed = parseToolResult(2);
-  assert.equal(listed.length, 8);
+  assert.equal(listed.length, 18);
   assert.equal(
     listed.find(({ path }) => path === "getting-started.md")?.url,
     `${baseUrl}getting-started`,
@@ -187,14 +187,18 @@ try {
   );
   for (const document of listed) {
     const expectedPage = new URL(routeMap.routes[document.path], baseUrl).href;
-    assert.equal(`${document.url}/`, expectedPage);
+    const actualPage = new URL(document.url);
+    const normalizedActualPage = actualPage.pathname.endsWith("/")
+      ? actualPage.href
+      : `${actualPage.href}/`;
+    assert.equal(normalizedActualPage, expectedPage);
     const pageResponse = await fetch(expectedPage);
     assert.equal(pageResponse.status, 200, `${expectedPage} did not resolve`);
     assert.match(pageResponse.headers.get("content-type") ?? "", /^text\/html/);
   }
 
   console.log(
-    "Verified the published corpus through all four MCP tools and 8 page URLs.",
+    `Verified the published corpus through all four MCP tools and ${listed.length} page URLs.`,
   );
 } finally {
   lines.close();

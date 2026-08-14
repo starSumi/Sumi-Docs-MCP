@@ -1,9 +1,20 @@
 {
   "name": "@sumi-os/docs-web",
   "version": "0.1.0",
+  "description": "Bilingual Astro and Starlight handbook with a machine-readable MCP projection.",
   "private": true,
   "type": "module",
   "packageManager": "npm@11.15.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/starSumi/sumi-docs-web.git"
+  },
+  "homepage": "https://github.com/starSumi/sumi-docs-web#readme",
+  "bugs": {
+    "url": "https://github.com/starSumi/sumi-docs-web/issues"
+  },
+  "author": "Sumi OS",
+  "license": "MIT",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -17,11 +28,12 @@
     "format:check": "prettier --check . --ignore-path .gitignore",
     "lint:staged": "lint-staged --fail-on-changes",
     "commitlint": "commitlint",
+    "test:git-hooks": "node scripts/git-hooks/test-gates.mjs",
     "verify:dist": "node scripts/verify-dist.mjs",
     "verify:mcp": "node scripts/verify-mcp.mjs",
     "validate:release-env": "node scripts/validate-release-env.mjs",
     "audit:prod": "npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org",
-    "verify": "npm run format:check && npm test && npm run build",
+    "verify": "npm run format:check && npm test && npm run test:git-hooks && npm run build",
     "verify:release": "npm run format:check && npm test && npm run build:release && npm run audit:prod",
     "verify:push": "npm run verify && npm run audit:prod",
     "prepare": "node .husky/install.mjs"

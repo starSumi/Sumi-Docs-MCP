@@ -15,7 +15,9 @@ sumi-docs-mcp serve <docs-source> [--openapi <path>] [--base-url <url>] [--trans
 a remote HTTPS manifest/base URL.
 
 `--base-url` selects what a person opens when an MCP result contains a URL. It
-does not host content and it does not change the MCP transport.
+does not host content and it does not change the MCP transport. Markdown
+extensions are removed, and a final `index.md` or `index.mdx` maps to its
+directory page.
 
 ## Development and distribution
 

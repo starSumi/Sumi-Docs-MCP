@@ -2,7 +2,9 @@
 
 Human-facing documentation for Sumi-Docs-MCP, built with Astro and Starlight.
 The site also publishes the strict raw-document manifest consumed by the MCP
-server's remote source mode.
+server's remote source mode. The checked-in product, operations, development,
+and release handbook is the showcase corpus: an MCP client can answer project
+questions from the same reviewed source people browse.
 
 English is served from the root path. Simplified Chinese is available under
 `/zh-cn/`, with Starlight's language selector connecting equivalent pages.
@@ -45,6 +47,10 @@ dist/_mcp/sumi-docs-manifest.json
 Point Sumi-Docs-MCP at the deployed `_mcp/` URL and use the site root as
 `--base-url`.
 
+For a local two-project demonstration, build this site, serve `dist/`, then
+launch Sumi-Docs-MCP with the local `/_mcp/` URL as its source and the site root
+as `--base-url`. The cross-project command below automates that full round trip.
+
 When the sibling MCP checkout is built, exercise the complete boundary locally:
 
 ```powershell
@@ -68,11 +74,16 @@ acceptance and rollback procedure.
 ## Architecture
 
 The site is intentionally a separate project from Sumi-Docs-MCP. They share a
-versioned publishing contract, not runtime source packages. See ADR-0001 and
-ADR-0002 in the Sumi-Docs-MCP project. ADR-0003 keeps manifest v1 path-only and
-defines the compatibility boundary for a future structured locale projection.
+versioned publishing contract, not runtime source packages. See
+[ADR-0001](https://github.com/starSumi/Sumi-Docs-MCP/blob/main/docs/decisions/0001-astro-starlight-dual-surface.md)
+and
+[ADR-0002](https://github.com/starSumi/Sumi-Docs-MCP/blob/main/docs/decisions/0002-polyrepo-and-package-manager.md).
+[ADR-0003](https://github.com/starSumi/Sumi-Docs-MCP/blob/main/docs/decisions/0003-localized-content-projection.md)
+keeps manifest v1 path-only and defines the compatibility boundary for a future
+structured locale projection.
 
 ## Project policy
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md),
-[CHANGELOG.md](CHANGELOG.md), and [LICENSE](LICENSE).
+[CHANGELOG.md](CHANGELOG.md), [docs/README.md](docs/README.md), and
+[LICENSE](LICENSE).

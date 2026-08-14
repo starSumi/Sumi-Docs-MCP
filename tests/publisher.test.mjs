@@ -15,6 +15,17 @@ test("normalizes an explicit source-to-page mapping", () => {
   );
 });
 
+test("preserves the root page mapping", () => {
+  assert.deepEqual(
+    normalizePublisherOptions({
+      documents: [{ source: "index.mdx", page: "/" }],
+    }),
+    {
+      documents: [{ source: "index.mdx", page: "/" }],
+    },
+  );
+});
+
 test("rejects traversal, duplicates, unknown fields, and invalid pages", () => {
   assert.throws(
     () =>

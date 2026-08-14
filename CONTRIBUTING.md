@@ -1,7 +1,13 @@
 # Contributing
 
-Read `AGENTS.md` before changing the site. It defines the repository boundary,
-content trust model, and required validation.
+This repository owns a static Astro/Starlight site and its public
+machine-readable corpus projection. Contributions must preserve English and
+Simplified Chinese route parity, the explicit publishing allowlist, trusted-only
+MDX compilation, and independent MCP/Web release lifecycles. Read
+[docs/content-model.md](docs/content-model.md),
+[docs/deployment.md](docs/deployment.md), and [SECURITY.md](SECURITY.md) before
+changing those boundaries. `AGENTS.md` contains the matching execution rules
+used by repository automation.
 
 ## Workflow
 
