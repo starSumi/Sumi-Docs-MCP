@@ -43,6 +43,10 @@ try {
   const humanTrailer = join(fixtureDirectory, "human-trailer.txt");
   const agentTrailer = join(fixtureDirectory, "agent-trailer.txt");
   const agentSubject = join(fixtureDirectory, "agent-subject.txt");
+  const approvedServiceTrailer = join(
+    fixtureDirectory,
+    "approved-service-trailer.txt",
+  );
 
   await Promise.all([
     writeFile(
@@ -56,6 +60,11 @@ try {
       "utf8",
     ),
     writeFile(agentSubject, "docs: apply Claude review suggestions\n", "utf8"),
+    writeFile(
+      approvedServiceTrailer,
+      "chore(deps-dev): update Astro types\n\nSigned-off-by: dependabot[bot] <support@github.com>\n",
+      "utf8",
+    ),
   ]);
 
   assertExit(
@@ -78,6 +87,11 @@ try {
     runNode(validatorPath, [agentSubject]),
     1,
     "automated tool name in subject",
+  );
+  assertExit(
+    runNode(validatorPath, [approvedServiceTrailer]),
+    0,
+    "approved dependency service attribution",
   );
   assertExit(runNode(validatorPath, []), 2, "missing message path");
 

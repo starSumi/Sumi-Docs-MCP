@@ -16,6 +16,8 @@ const automatedNamePattern =
   /^(claude(?: code)?|codex|chatgpt|github copilot|copilot|gemini)$/i;
 const automatedMarkerPattern =
   /(?:\[bot\]|\b(?:ai|llm)\s+(?:agent|assistant)\b)/i;
+const approvedServiceTrailerPattern =
+  /^dependabot\[bot\]\s*<support@github\.com>$/i;
 const toolReferencePattern =
   /\b(?:claude(?:\s+code)?|codex|chatgpt|github\s+copilot|copilot|gemini)\b/i;
 
@@ -26,6 +28,8 @@ const rejectedTrailers = footerBlock.split("\n").filter((line) => {
   const value = match[2].trim();
   const emailMatch = /<([^>]+)>/.exec(value);
   const displayName = value.replace(/\s*<[^>]+>\s*$/, "").trim();
+
+  if (approvedServiceTrailerPattern.test(value)) return false;
 
   if (automatedMarkerPattern.test(value)) return true;
 
