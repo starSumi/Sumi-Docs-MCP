@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "sumi-docs": {
+      "command": "node",
+      "args": [
+        "C:/absolute/path/to/Sumi-Docs-MCP/dist/index.js",
+        "serve",
+        "C:/absolute/path/to/your/docs",
+        "--openapi",
+        "C:/absolute/path/to/your/openapi.json",
+        "--base-url",
+        "https://docs.example.com/product/"
+      ]
+    }
+  }
+}

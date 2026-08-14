@@ -1,0 +1,2 @@
+node scripts/git-hooks/reject-agent-identity.mjs
+npm run lint:staged

@@ -1,0 +1,17 @@
+---
+title: API Authentication
+owner: platform
+---
+
+# API Authentication
+
+## Bearer token
+
+Send the API token in the `Authorization` header:
+
+```http
+Authorization: Bearer example-token
+```
+
+Tokens are scoped to one environment. Do not reuse production tokens in local
+development.
