@@ -3,8 +3,9 @@
 Human-facing documentation for Sumi-Docs-MCP, built with Astro and Starlight.
 The site also publishes the strict raw-document manifest consumed by the MCP
 server's remote source mode. The checked-in product, operations, development,
-and release handbook is the showcase corpus: an MCP client can answer project
-questions from the same reviewed source people browse.
+release, contribution, and integration handbook is the showcase corpus: an MCP
+client can answer project questions from the same reviewed source people
+browse.
 
 English is served from the root path. Simplified Chinese is available under
 `/zh-cn/`, with Starlight's language selector connecting equivalent pages.
@@ -87,3 +88,7 @@ structured locale projection.
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md),
 [CHANGELOG.md](CHANGELOG.md), [docs/README.md](docs/README.md), and
 [LICENSE](LICENSE).
+
+The published handbook includes the complete pull request lifecycle and the
+ownership boundary between client Skills, Sumi-Docs-MCP, agent orchestration,
+and this site. The repository does not ship a client-specific runtime Skill.

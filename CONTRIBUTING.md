@@ -9,6 +9,11 @@ MDX compilation, and independent MCP/Web release lifecycles. Read
 changing those boundaries. `AGENTS.md` contains the matching execution rules
 used by repository automation.
 
+Start with the published [contribution workflow](src/content/docs/contributing.md)
+for issue triage, pull request readiness, validation evidence, and merge policy.
+Changes involving client Skills or workflow orchestration must also follow
+[the Skill and orchestration boundary](src/content/docs/skills-and-orchestration.md).
+
 ## Workflow
 
 1. Define the observable content, publishing, or rendering behavior being

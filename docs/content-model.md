@@ -10,8 +10,9 @@ The two repositories have separate documentation responsibilities:
   selected operator documentation plus independent example content. The MCP
   integration test owns its synchronization allowlist.
 - `sumi-docs-web/src/content/docs/` is authoritative for the public bilingual
-  handbook. It is both rendered for people and copied through an explicit
-  allowlist into the machine-readable corpus.
+  product, operations, contribution, and integration handbook. It is both
+  rendered for people and copied through an explicit allowlist into the
+  machine-readable corpus.
 
 Generated `dist/`, Pagefind data, `sumi-docs-manifest.json`, and
 `sumi-docs-routes.json` are build outputs. They must not be edited as content
@@ -33,6 +34,10 @@ registries or committed.
 Renames and deletions update both locales and both route mappings in the same
 change. Do not infer locale from filenames in the MCP protocol; manifest v1
 treats locale-prefixed values as ordinary paths.
+
+Client-specific Skill packages do not belong in this content tree. The
+published Skills page documents ownership and integration requirements, while
+the runnable Skill remains in the owning client or user catalog.
 
 ## Trust boundary
 

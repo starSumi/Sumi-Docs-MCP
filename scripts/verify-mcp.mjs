@@ -160,7 +160,7 @@ try {
   const parseToolResult = (id) =>
     JSON.parse(responses.get(id)?.result?.content?.[0]?.text ?? "null");
   const listed = parseToolResult(2);
-  assert.equal(listed.length, 18);
+  assert.equal(listed.length, 22);
   assert.equal(
     listed.find(({ path }) => path === "getting-started.md")?.url,
     `${baseUrl}getting-started`,
@@ -178,6 +178,8 @@ try {
     chineseSearchResults.every(({ path }) => path.startsWith("zh-cn/")),
   );
   assert.match(parseToolResult(7)?.content ?? "", /四个只读工具/);
+  assert.ok(listed.some(({ path }) => path === "contributing.md"));
+  assert.ok(listed.some(({ path }) => path === "skills-and-orchestration.md"));
 
   const routeMap = JSON.parse(
     await readFile(

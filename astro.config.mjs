@@ -84,6 +84,24 @@ export default defineConfig({
               label: "Architecture",
               translations: { "zh-CN": "架构" },
             },
+          ],
+        },
+        {
+          label: "Contribute",
+          translations: {
+            "zh-CN": "参与贡献",
+          },
+          items: [
+            {
+              slug: "contributing",
+              label: "Contributing",
+              translations: { "zh-CN": "参与贡献" },
+            },
+            {
+              slug: "skills-and-orchestration",
+              label: "Skills and orchestration",
+              translations: { "zh-CN": "Skills 与编排" },
+            },
             {
               slug: "development",
               label: "Development",
@@ -107,6 +125,11 @@ export default defineConfig({
         { source: "troubleshooting.md", page: "/troubleshooting/" },
         { source: "remote-sources.md", page: "/remote-sources/" },
         { source: "architecture.md", page: "/architecture/" },
+        { source: "contributing.md", page: "/contributing/" },
+        {
+          source: "skills-and-orchestration.md",
+          page: "/skills-and-orchestration/",
+        },
         { source: "development.md", page: "/development/" },
         { source: "releasing.md", page: "/releasing/" },
         { source: "zh-cn/index.mdx", page: "/zh-cn/" },
@@ -116,6 +139,11 @@ export default defineConfig({
         { source: "zh-cn/troubleshooting.md", page: "/zh-cn/troubleshooting/" },
         { source: "zh-cn/remote-sources.md", page: "/zh-cn/remote-sources/" },
         { source: "zh-cn/architecture.md", page: "/zh-cn/architecture/" },
+        { source: "zh-cn/contributing.md", page: "/zh-cn/contributing/" },
+        {
+          source: "zh-cn/skills-and-orchestration.md",
+          page: "/zh-cn/skills-and-orchestration/",
+        },
         { source: "zh-cn/development.md", page: "/zh-cn/development/" },
         { source: "zh-cn/releasing.md", page: "/zh-cn/releasing/" },
       ],

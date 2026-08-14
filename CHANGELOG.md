@@ -17,3 +17,7 @@ This file records user-visible changes to the documentation site.
   favicon for the public source distribution.
 - Expanded the bilingual showcase corpus with the overview, MCP tool reference,
   troubleshooting, development, and release handbooks.
+- Added issue and pull request templates plus a reviewable contribution
+  lifecycle.
+- Added bilingual guidance for client Skills, the MCP capability boundary,
+  agent orchestration, and the Web projection.
