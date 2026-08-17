@@ -1,0 +1,41 @@
+name: Feature request
+description: Propose a documentation, publishing, or integration improvement.
+title: "feat: "
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: Describe the reader, operator, or integrator problem without assuming an implementation.
+    validations:
+      required: true
+  - type: dropdown
+    id: boundary
+    attributes:
+      label: Primary boundary
+      options:
+        - Human documentation or translation
+        - Machine corpus or publishing contract
+        - Navigation, theme, or accessibility
+        - Skill or agent integration
+        - Workflow orchestration or service boundary
+        - Build, deployment, performance, or release
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Proposed outcome
+      description: Include observable acceptance criteria and relevant alternatives.
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Locale, route, compatibility, and security impact
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Validation evidence
+      description: Link standards or provide tests, measurements, or a minimal content example.

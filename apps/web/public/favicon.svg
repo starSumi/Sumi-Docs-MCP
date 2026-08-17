@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="title">
+  <title>Sumi Docs</title>
+  <path fill="#202124" d="M8 12c12 0 20 4 24 12 4-8 12-12 24-12v40c-12 0-20 3-24 9-4-6-12-9-24-9z"/>
+  <path fill="#fff" d="M12 16c9 1 15 4 20 10v28c-5-5-12-8-20-8zm40 0c-9 1-15 4-20 10v28c5-5 12-8 20-8z"/>
+  <circle cx="25" cy="29" r="4" fill="#08b6d5"/>
+  <circle cx="39" cy="29" r="4" fill="#ff4d55"/>
+  <path stroke="#202124" stroke-linecap="round" stroke-width="2.5" d="m27.5 31.5 4.5 4 4.5-4"/>
+  <circle cx="32" cy="37" r="3" fill="#202124"/>
+</svg>

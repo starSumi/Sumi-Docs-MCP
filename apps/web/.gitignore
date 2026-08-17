@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.astro/
+*.log
+.env
+.env.*
+!.env.example
+!.env.*.example
+coverage/
+artifacts/
+tmp/
+.DS_Store
+.vscode/
+.idea/
