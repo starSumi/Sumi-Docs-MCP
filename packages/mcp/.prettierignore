@@ -1,0 +1,6 @@
+artifacts/
+dist/
+node_modules/
+docs/history/
+.gemini/
+.omc/

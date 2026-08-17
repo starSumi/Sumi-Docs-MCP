@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a reproducible Sumi-Docs-MCP defect.
+title: "bug: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not report security vulnerabilities here. Follow SECURITY.md instead.
+  - type: input
+    id: version
+    attributes:
+      label: Version or commit
+      placeholder: 0.1.0 or commit SHA
+    validations:
+      required: true
+  - type: input
+    id: runtime
+    attributes:
+      label: Runtime and operating system
+      placeholder: Node.js 25.5.0, Windows 11
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Documentation source
+      options:
+        - Local directory
+        - Remote HTTPS manifest
+        - Both
+        - Not source-related
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Observed behavior
+      description: Include the tool or command, sanitized stderr, and exact error shape when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Remove credentials, private document content, and absolute personal paths.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Checks already run
+      placeholder: Commands, exit codes, and relevant output

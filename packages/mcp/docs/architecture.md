@@ -1,0 +1,75 @@
+# Architecture
+
+## Architecture decisions
+
+- [ADR-0001: Separate Astro documentation UI from the MCP data plane](decisions/0001-astro-starlight-dual-surface.md)
+- [ADR-0002: Keep the MCP server and documentation site in sibling repositories](decisions/0002-polyrepo-and-package-manager.md)
+- [ADR-0003: Evolve localized content through a versioned projection](decisions/0003-localized-content-projection.md)
+- [ADR-0004: Initialize the authoritative source repositories](decisions/0004-authoritative-repository-initialization.md)
+- [ADR-0005: Discover project documentation without owning `.sumi`](decisions/0005-project-discovery-and-local-state-placement.md)
+- [ADR-0006: Publish an immutable version 2 content projection](decisions/0006-immutable-content-projection.md)
+- [ADR-0007: Integrate through native agent-host contracts](decisions/0007-native-agent-host-integration.md)
+- [ADR-0008: Unify the product in an npm workspace](decisions/0008-product-workspace-topology.md)
+- [ADR-0009: Keep reconciliation state outside the MCP data plane](decisions/0009-reconciliation-and-control-plane-state.md)
+- [ADR-0010: Keep Node.js until a Rust spike passes a parity gate](decisions/0010-runtime-migration-gate.md)
+
+## Request path
+
+```text
+MCP client
+  -> stdio JSON-RPC transport
+  -> MCP tool handlers and Zod input validation
+  -> process-local DocsVault
+  -> Markdown/MDX parser or OpenAPI parser
+  -> local read-only files or bounded remote manifest fetches
+```
+
+The MCP server is created without loading the corpus. `tools/list` and discovery
+can respond immediately. The first tool invocation that needs content constructs
+the `DocsVault`; the resulting promise and read-only index are reused for the life
+of that server process.
+
+In this project, stateless means no client identity, session data, conversation
+state, or request-driven mutation. It does not mean the process has no memory.
+The parsed documentation index is process-local read-only state.
+
+## Modules
+
+| Path          | Responsibility                                                |
+| ------------- | ------------------------------------------------------------- |
+| `src/parser/` | parse Markdown/MDX and OpenAPI input                          |
+| `src/vfs/`    | acquire the local/remote corpus and query its read-only index |
+| `src/mcp/`    | validate tool input and map calls to VFS operations           |
+| `src/types/`  | shared TypeScript contracts only                              |
+| `src/utils/`  | pure path and text helpers                                    |
+
+The protocol layer does not perform direct file I/O. The VFS does not know about
+JSON-RPC. UI frameworks, DOM libraries, databases, and HTTP frameworks are out of
+scope.
+
+## Security boundaries
+
+- MCP tool arguments are validated with strict Zod schemas.
+- `fetch_doc` accepts a restricted relative Markdown/MDX path and performs a map
+  lookup; it does not concatenate client input into a filesystem path.
+- The VFS derives document keys only from files found below the configured root.
+- Remote mode accepts a strict manifest, resolves restricted relative paths on
+  the same origin, rejects redirects, and bounds response time and size.
+- Any future feature that opens a client-provided path must resolve the candidate
+  and use `path.relative` to prove it remains below the root. String prefix checks
+  are not a valid containment test.
+- Client-facing errors are sanitized. Detailed failures go to stderr.
+- The server exposes no write, delete, or source modification tools.
+
+## Data and refresh behavior
+
+Local or remote Markdown and MDX files are parsed during vault construction. Full parsed content
+therefore remains in memory; content is not loaded per `fetch_doc`. There is no
+file watcher or live refresh. This is a known tradeoff against the original memory
+target and must be measured before claiming support for very large corpora.
+
+## Public tool contract
+
+The stable tool names are `list_docs`, `search_docs`, `fetch_doc`, and
+`get_openapi_spec`. Their schemas and output shape are covered by integration
+tests. Renaming a tool or changing a schema is a public API change.
