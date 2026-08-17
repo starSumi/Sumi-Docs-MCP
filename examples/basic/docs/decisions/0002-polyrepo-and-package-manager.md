@@ -1,6 +1,6 @@
 # ADR-0002: Keep the MCP server and documentation site in sibling repositories
 
-- Status: Accepted
+- Status: Superseded by [ADR-0008](0008-product-workspace-topology.md)
 - Date: 2026-08-13
 - Owners: Sumi Docs maintainers
 - Extends: [ADR-0001](0001-astro-starlight-dual-surface.md)

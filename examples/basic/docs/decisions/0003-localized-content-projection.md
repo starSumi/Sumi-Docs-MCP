@@ -8,8 +8,8 @@
 ## Context
 
 The documentation website now renders English at `/` and Simplified Chinese at
-`/zh-cn/`. Its publisher emits eight locale-prefixed source files through the
-strict manifest v1 and verifies an explicit source-to-page route map.
+`/zh-cn/`. Its publisher emits both locale variants through the strict manifest
+v1 and verifies an explicit source-to-page route map.
 
 Manifest v1 represents documents as relative path strings. Sumi-Docs-MCP treats
 `zh-cn/getting-started.md` as a path; `DocNode`, `list_docs`, `search_docs`, and
@@ -46,9 +46,8 @@ Treat the following as distinct contracts:
 Any future language-aware projection requires a new schema version. Its minimum
 document record will contain `id`, `locale`, `path`, `route`, and a SHA-256
 content digest. The corpus will contain an immutable `revision` and, when the
-publisher can supply it reliably, source provenance. Exact field names and JSON
-schema will be finalized with producer and consumer contract tests before
-manifest v2 is accepted.
+publisher can supply it reliably, source provenance. ADR-0006 finalizes the v2
+publication and compatibility boundary.
 
 Do not add access-control fields to a public static manifest. Private corpora,
 authenticated acquisition, tenant visibility, and authorization require a

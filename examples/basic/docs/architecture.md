@@ -5,6 +5,13 @@
 - [ADR-0001: Separate Astro documentation UI from the MCP data plane](decisions/0001-astro-starlight-dual-surface.md)
 - [ADR-0002: Keep the MCP server and documentation site in sibling repositories](decisions/0002-polyrepo-and-package-manager.md)
 - [ADR-0003: Evolve localized content through a versioned projection](decisions/0003-localized-content-projection.md)
+- [ADR-0004: Initialize the authoritative source repositories](decisions/0004-authoritative-repository-initialization.md)
+- [ADR-0005: Discover project documentation without owning `.sumi`](decisions/0005-project-discovery-and-local-state-placement.md)
+- [ADR-0006: Publish an immutable version 2 content projection](decisions/0006-immutable-content-projection.md)
+- [ADR-0007: Integrate through native agent-host contracts](decisions/0007-native-agent-host-integration.md)
+- [ADR-0008: Unify the product in an npm workspace](decisions/0008-product-workspace-topology.md)
+- [ADR-0009: Keep reconciliation state outside the MCP data plane](decisions/0009-reconciliation-and-control-plane-state.md)
+- [ADR-0010: Keep Node.js until a Rust spike passes a parity gate](decisions/0010-runtime-migration-gate.md)
 
 ## Request path
 
