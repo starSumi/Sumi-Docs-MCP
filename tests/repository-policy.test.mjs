@@ -367,7 +367,7 @@ test("active workflows enforce privilege and supersession boundaries", () => {
     (step) => step.name === "Upload for human acceptance",
   ).with.path = "artifacts/*";
   weakened.ci.jobs.verify.steps = weakened.ci.jobs.verify.steps.filter(
-    (step) => !String(step.uses ?? "").startsWith("pnpm/action-setup@"),
+    (step) => step.name !== "Install the pinned package manager",
   );
   const errors = validateWorkflowPolicy(weakened);
   assert.ok(errors.some((error) => error.includes("permissions")));

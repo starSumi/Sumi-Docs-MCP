@@ -55,10 +55,9 @@ jobs:
           node-version-file: .node-version
 
       - name: Install the pinned package manager
-        uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.1.0
-        with:
-          version: 10.26.0
-          run_install: false
+        run: |
+          npm install --global --ignore-scripts --registry https://registry.npmjs.org pnpm@10.26.0
+          pnpm --version
 
       - name: Install exact dependencies
         run: pnpm install --frozen-lockfile --ignore-scripts

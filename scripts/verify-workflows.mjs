@@ -4,8 +4,10 @@ import { pathToFileURL } from "node:url";
 import { parse } from "yaml";
 
 const PINNED_ACTION = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+@[0-9a-f]{40}$/u;
-const PNPM_SETUP_ACTION =
-  "pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1";
+const PNPM_BOOTSTRAP = [
+  "npm install --global --ignore-scripts --registry https://registry.npmjs.org pnpm@10.26.0",
+  "pnpm --version",
+].join("\n");
 const ACTIVE_WORKFLOWS = new Set([
   "candidate.yml",
   "ci.yml",
@@ -27,28 +29,26 @@ function sameKeys(object, keys) {
 
 function validatePnpmLifecycle(workflowName, jobName, job, errors) {
   const steps = job?.steps ?? [];
-  const setupIndex = steps.findIndex((step) => step.uses === PNPM_SETUP_ACTION);
+  const setupIndex = steps.findIndex(
+    (step) => String(step.run ?? "").trim() === PNPM_BOOTSTRAP,
+  );
   const installIndex = steps.findIndex((step) =>
     String(step.run ?? "").includes(
       "pnpm install --frozen-lockfile --ignore-scripts",
     ),
   );
-  const setup = steps[setupIndex];
-  if (
-    setupIndex < 0 ||
-    installIndex <= setupIndex ||
-    String(setup?.with?.version) !== "10.26.0" ||
-    setup?.with?.run_install !== false
-  ) {
+  if (setupIndex < 0 || installIndex <= setupIndex) {
     errors.push(
       `${workflowName} ${jobName} must install pinned pnpm before the frozen dependency install.`,
     );
   }
   if (
-    steps.some((step) =>
-      /(?:^|\s)npm\s+(?:ci|install|run|test|pack|audit)(?:\s|$)/u.test(
-        String(step.run ?? ""),
-      ),
+    steps.some(
+      (step) =>
+        String(step.run ?? "").trim() !== PNPM_BOOTSTRAP &&
+        /(?:^|\s)npm\s+(?:ci|install|run|test|pack|audit)(?:\s|$)/u.test(
+          String(step.run ?? ""),
+        ),
     )
   ) {
     errors.push(
