@@ -83,16 +83,16 @@ test("tracked host adapter validation requires the complete supported set", () =
   ]);
 });
 
-test("host maintenance instructions track the TypeScript and pnpm contracts", () => {
+test("host maintenance adapters route the scoped global maintainer", () => {
   const valid = new Map([
     [
       ".agents/skills/sumi-docs-maintain/SKILL.md",
       [
-        "apps/web/src/content-catalog.ts",
-        "pnpm run verify",
-        "pnpm run verify:integration",
-        "pnpm run smoke:mcp",
-        "pnpm run pack:mcp",
+        "Sumi Docs project family",
+        "globally activated `sumi-docs-maintain` skill",
+        "sumi-docs.config.json",
+        "pnpm-workspace.yaml",
+        "@sumi-os/docs-mcp",
       ].join("\n"),
     ],
     [
@@ -105,18 +105,14 @@ test("host maintenance instructions track the TypeScript and pnpm contracts", ()
   const stale = new Map(valid);
   stale.set(
     ".agents/skills/sumi-docs-maintain/SKILL.md",
-    "apps/web/src/content-catalog.mjs\nnpm run verify",
+    "Sumi Docs project family\npnpm-workspace.yaml",
   );
   stale.set(
     ".claude/skills/sumi-docs-maintain/SKILL.md",
     "../../../docs/maintenance.md",
   );
   const errors = validateHostContents(stale);
-  assert.ok(
-    errors.some((error) => error.includes("TypeScript content catalog")),
-  );
-  assert.ok(errors.some((error) => error.includes("retired JavaScript")));
-  assert.ok(errors.some((error) => error.includes("pnpm workspace lifecycle")));
+  assert.ok(errors.some((error) => error.includes("scope marker")));
   assert.ok(
     errors.some((error) => error.includes("canonical maintainer Skill")),
   );

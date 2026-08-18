@@ -63,32 +63,18 @@ export function validateHostContents(contents) {
     ".agents/skills/sumi-docs-maintain/SKILL.md",
   );
   if (maintainerSkill !== undefined) {
-    if (!maintainerSkill.includes("apps/web/src/content-catalog.ts")) {
-      errors.push(
-        "Maintainer Skill must reference the TypeScript content catalog.",
-      );
-    }
-    if (maintainerSkill.includes("content-catalog.mjs")) {
-      errors.push(
-        "Maintainer Skill references the retired JavaScript content catalog.",
-      );
-    }
-    for (const command of [
-      "pnpm run verify",
-      "pnpm run verify:integration",
-      "pnpm run smoke:mcp",
-      "pnpm run pack:mcp",
+    for (const marker of [
+      "Sumi Docs project family",
+      "globally activated `sumi-docs-maintain` skill",
+      "sumi-docs.config.json",
+      "pnpm-workspace.yaml",
+      "@sumi-os/docs-mcp",
     ]) {
-      if (!maintainerSkill.includes(command)) {
+      if (!maintainerSkill.includes(marker)) {
         errors.push(
-          `Maintainer Skill is missing the workspace command: ${command}`,
+          `Maintainer Skill adapter is missing the scope marker: ${marker}`,
         );
       }
-    }
-    if (/\bnpm run\b/u.test(maintainerSkill)) {
-      errors.push(
-        "Maintainer Skill must not bypass the pnpm workspace lifecycle.",
-      );
     }
   }
 

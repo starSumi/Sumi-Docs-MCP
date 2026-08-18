@@ -23,7 +23,7 @@
     "verify": "pnpm verify:repository-policy && pnpm lint && pnpm duplication && pnpm verify:lockfile && pnpm verify:contract && pnpm verify:mcp && pnpm verify:web",
     "verify:integration": "pnpm --filter @sumi-os/corpus-contract build && pnpm --filter @sumi-os/docs-mcp build && pnpm --filter @sumi-os/docs-web build && pnpm --filter @sumi-os/docs-web verify:mcp && pnpm verify:hosts",
     "verify:hosts": "node scripts/verify-host-adapters.mjs",
-    "verify:repository-policy": "node --test tests/repository-policy.test.mjs && node scripts/verify-host-files.mjs --tracked && node scripts/verify-workflows.mjs && pnpm verify:i18n",
+    "verify:repository-policy": "node --test tests/repository-policy.test.mjs && node scripts/verify-host-files.mjs --tracked && node scripts/verify-workflows.mjs && node scripts/verify-translation-pairing.mjs",
     "verify:i18n": "node scripts/verify-translation-pairing.mjs",
     "verify:lockfile": "node scripts/verify-lockfile.mjs",
     "smoke:mcp": "pnpm --filter @sumi-os/docs-mcp example:smoke",
