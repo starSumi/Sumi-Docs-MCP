@@ -5,7 +5,7 @@ import { parse } from "yaml";
 
 const PINNED_ACTION = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+@[0-9a-f]{40}$/u;
 const PNPM_SETUP_ACTION =
-  "pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda";
+  "pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1";
 const ACTIVE_WORKFLOWS = new Set([
   "candidate.yml",
   "ci.yml",
