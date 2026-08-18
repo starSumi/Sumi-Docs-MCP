@@ -366,10 +366,14 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   weakened.candidate.jobs.build.steps.find(
     (step) => step.name === "Upload for human acceptance",
   ).with.path = "artifacts/*";
+  weakened.ci.jobs.verify.steps = weakened.ci.jobs.verify.steps.filter(
+    (step) => !String(step.uses ?? "").startsWith("pnpm/action-setup@"),
+  );
   const errors = validateWorkflowPolicy(weakened);
   assert.ok(errors.some((error) => error.includes("permissions")));
   assert.ok(errors.some((error) => error.includes("cancelled or superseded")));
   assert.ok(errors.some((error) => error.includes("performance diagnostics")));
   assert.ok(errors.some((error) => error.includes("structured allowlist")));
   assert.ok(errors.some((error) => error.includes("structured observation")));
+  assert.ok(errors.some((error) => error.includes("pinned pnpm")));
 });

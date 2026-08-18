@@ -4,6 +4,8 @@ import { pathToFileURL } from "node:url";
 import { parse } from "yaml";
 
 const PINNED_ACTION = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+@[0-9a-f]{40}$/u;
+const PNPM_SETUP_ACTION =
+  "pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda";
 const ACTIVE_WORKFLOWS = new Set([
   "candidate.yml",
   "ci.yml",
@@ -25,17 +27,21 @@ function sameKeys(object, keys) {
 
 function validatePnpmLifecycle(workflowName, jobName, job, errors) {
   const steps = job?.steps ?? [];
-  const activationIndex = steps.findIndex(
-    (step) => String(step.run ?? "").trim() === "corepack enable",
-  );
+  const setupIndex = steps.findIndex((step) => step.uses === PNPM_SETUP_ACTION);
   const installIndex = steps.findIndex((step) =>
     String(step.run ?? "").includes(
       "pnpm install --frozen-lockfile --ignore-scripts",
     ),
   );
-  if (activationIndex < 0 || installIndex <= activationIndex) {
+  const setup = steps[setupIndex];
+  if (
+    setupIndex < 0 ||
+    installIndex <= setupIndex ||
+    String(setup?.with?.version) !== "10.26.0" ||
+    setup?.with?.run_install !== false
+  ) {
     errors.push(
-      `${workflowName} ${jobName} must activate Corepack before the frozen pnpm install.`,
+      `${workflowName} ${jobName} must install pinned pnpm before the frozen dependency install.`,
     );
   }
   if (

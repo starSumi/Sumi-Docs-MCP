@@ -79,6 +79,7 @@
   "devDependencies": {
     "@commitlint/cli": "^21.2.1",
     "@commitlint/config-conventional": "^21.2.0",
+    "@types/mdast": "^4.0.4",
     "@types/minimist": "^1.2.5",
     "@types/node": "^25.9.5",
     "esbuild": "^0.28.2",
