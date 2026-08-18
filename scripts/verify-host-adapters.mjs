@@ -24,9 +24,10 @@ const claude = (await readJson(".mcp.json")).mcpServers["sumi-docs"];
 const vscode = (await readJson(".vscode/mcp.json")).servers["sumi-docs"];
 
 assert.equal(vscode.type, "stdio");
-assert.equal(codex.command, "pnpm");
+assert.equal(codex.command, "node");
 assert.equal(claude.command, "node");
 assert.equal(vscode.command, "node");
+assert.equal(codex.cwd, ".");
 
 function resolveVariables(value) {
   return value
@@ -37,15 +38,6 @@ function resolveVariables(value) {
 async function probe({ name, command, args, cwd }) {
   let resolvedCommand = command;
   let resolvedArgs = args.map(resolveVariables);
-  if (process.platform === "win32" && command === "pnpm") {
-    assert.match(
-      process.env.npm_execpath ?? "",
-      /pnpm(?:\.cjs)?$/i,
-      "npm_execpath must identify pnpm on Windows",
-    );
-    resolvedCommand = process.execPath;
-    resolvedArgs = [process.env.npm_execpath, ...resolvedArgs];
-  }
   const child = spawn(resolvedCommand, resolvedArgs, {
     cwd,
     env: process.env,
@@ -121,7 +113,7 @@ for (const adapter of [
     name: "Codex",
     command: codex.command,
     args: codex.args,
-    cwd: join(projectRoot, "docs", "operations"),
+    cwd: projectRoot,
   },
   {
     name: "Claude Code",

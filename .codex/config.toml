@@ -1,4 +1,5 @@
 [mcp_servers.sumi_docs]
-command = "pnpm"
-args = ["--filter", "@sumi-os/docs-mcp", "exec", "sumi-docs-mcp", "serve"]
+command = "node"
+args = ["packages/mcp/dist/index.js", "serve"]
+cwd = "."
 startup_timeout_sec = 15
