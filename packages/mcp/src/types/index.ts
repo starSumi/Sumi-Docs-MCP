@@ -47,6 +47,7 @@ export interface DocNode {
   frontmatter?: Record<string, unknown>;
   lastModified?: Date;
   sourceUrl?: string;
+  route?: string;
 }
 
 /**
@@ -59,6 +60,7 @@ export interface SearchResult {
   snippet: string;
   score?: number;
   sourceUrl?: string;
+  route?: string;
 }
 
 /**
@@ -79,4 +81,21 @@ export interface CLIOptions {
   openApiPath?: string;
   baseUrl?: string;
   verbose?: boolean;
+}
+
+/** Parsed CLI values before project discovery resolves the documentation source. */
+export interface ParsedCLIOptions {
+  transport: "stdio";
+  docsSource?: string;
+  openApiPath?: string;
+  baseUrl?: string;
+  configPath?: string;
+  verbose?: boolean;
+}
+
+/** Fully resolved CLI values and their discovery provenance. */
+export interface ResolvedCLIOptions extends CLIOptions {
+  configPath?: string;
+  projectRoot: string;
+  sourceOrigin: "cli" | "config" | "default";
 }

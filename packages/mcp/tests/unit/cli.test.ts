@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseCliOptions } from "../../src/cli.js";
+import { parseCliOptions, parseDoctorOptions } from "../../src/cli.js";
 
 test("parseCliOptions accepts the documented stdio command", () => {
   assert.deepEqual(
@@ -38,6 +38,70 @@ test("parseCliOptions accepts a remote documentation manifest", () => {
       transport: "stdio",
       verbose: false,
     },
+  );
+});
+
+test("parseCliOptions accepts discovery and explicit config", () => {
+  assert.deepEqual(parseCliOptions(["serve"]), {
+    docsSource: undefined,
+    openApiPath: undefined,
+    baseUrl: undefined,
+    transport: "stdio",
+    verbose: false,
+  });
+  assert.deepEqual(
+    parseCliOptions(["serve", "--config", "config/sumi-docs.json"]),
+    {
+      docsSource: undefined,
+      openApiPath: undefined,
+      baseUrl: undefined,
+      configPath: "config/sumi-docs.json",
+      transport: "stdio",
+      verbose: false,
+    },
+  );
+});
+
+test("parseDoctorOptions accepts the JSON diagnostic mode", () => {
+  assert.deepEqual(parseDoctorOptions(["doctor", "--json"]), {
+    options: {
+      docsSource: undefined,
+      openApiPath: undefined,
+      baseUrl: undefined,
+      transport: "stdio",
+      verbose: false,
+    },
+    json: true,
+    showPaths: false,
+  });
+});
+
+test("parseDoctorOptions supports explicit path disclosure only for doctor", () => {
+  assert.deepEqual(parseDoctorOptions(["doctor", "--show-paths"]), {
+    options: {
+      docsSource: undefined,
+      openApiPath: undefined,
+      baseUrl: undefined,
+      transport: "stdio",
+      verbose: false,
+    },
+    json: false,
+    showPaths: true,
+  });
+  assert.throws(
+    () => parseCliOptions(["serve", "--show-paths"]),
+    /only by the doctor command/i,
+  );
+  assert.throws(
+    () => parseDoctorOptions(["doctor", "--show-paths=true"]),
+    /does not accept a value/i,
+  );
+});
+
+test("config path requires a value", () => {
+  assert.throws(
+    () => parseCliOptions(["serve", "--config"]),
+    /--config requires/i,
   );
 });
 

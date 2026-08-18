@@ -61,18 +61,18 @@ gate passed.
 Ordinary source and documentation changes run:
 
 ```powershell
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm run example:smoke
-npm pack --dry-run
+pnpm run lint
+pnpm run typecheck
+pnpm test
+pnpm run build
+pnpm run example:smoke
+pnpm pack --dry-run
 ```
 
 SEA and packaging changes also run the executable checks and cold-start
 benchmark documented in `AGENTS.md` and `docs/development.md`. Protocol or
-publishing changes must run the cross-project verification in the sibling
-Sumi Docs Web repository.
+publishing changes must run `pnpm run verify:integration` from the workspace
+root.
 
 Report runtime versions, failed gates, skipped gates, and measured performance
 without rewriting them as passing conclusions.

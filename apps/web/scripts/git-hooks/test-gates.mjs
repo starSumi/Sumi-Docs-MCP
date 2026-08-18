@@ -14,7 +14,7 @@ const identityValidatorUrl = new URL(
   import.meta.url,
 );
 const commitlintPath = fileURLToPath(
-  new URL("../../node_modules/@commitlint/cli/cli.js", import.meta.url),
+  import.meta.resolve("@commitlint/cli/cli.js"),
 );
 const fixtureDirectory = await mkdtemp(join(tmpdir(), "sumi-web-git-hooks-"));
 

@@ -10,7 +10,7 @@ import {
   PROTOCOL_VERSION_META_KEY,
 } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
-import { DocsMcpServer } from "../../src/mcp/server.js";
+import { DocsMcpServer, SERVER_INSTRUCTIONS } from "../../src/mcp/server.js";
 import { DocsVault } from "../../src/vfs/DocsVault.js";
 
 async function createFixture(root: string): Promise<void> {
@@ -101,6 +101,11 @@ test("MCP tools list, search, and fetch round-trip over JSON-RPC", async () => {
         Object,
       true,
     );
+    assert.equal(
+      (initialized.result as Record<string, unknown>).instructions,
+      SERVER_INSTRUCTIONS,
+    );
+    assert.ok(SERVER_INSTRUCTIONS.length <= 512);
     await clientTransport.send({
       jsonrpc: "2.0",
       method: "notifications/initialized",
@@ -138,7 +143,7 @@ test("MCP tools list, search, and fetch round-trip over JSON-RPC", async () => {
     assert.match(searchText, /guide\.md/);
     assert.equal(
       (JSON.parse(searchText) as Array<{ url: string }>)[0]?.url,
-      "https://docs.example.com/product/guide",
+      "https://docs.example.com/product/guide/",
     );
     assert.equal(
       typeof (searched.result as Record<string, unknown>)._meta,
@@ -159,7 +164,7 @@ test("MCP tools list, search, and fetch round-trip over JSON-RPC", async () => {
       )[0]?.text ?? "";
     assert.equal(
       (JSON.parse(fetchText) as { url: string }).url,
-      "https://docs.example.com/product/guide",
+      "https://docs.example.com/product/guide/",
     );
 
     const documents = await sendAndWait(clientTransport, 12, {
@@ -181,11 +186,11 @@ test("MCP tools list, search, and fetch round-trip over JSON-RPC", async () => {
       [
         {
           path: "guide.md",
-          url: "https://docs.example.com/product/guide",
+          url: "https://docs.example.com/product/guide/",
         },
         {
           path: "intro.md",
-          url: "https://docs.example.com/product/intro",
+          url: "https://docs.example.com/product/intro/",
         },
       ],
     );
@@ -210,8 +215,11 @@ test("MCP tools list, search, and fetch round-trip over JSON-RPC", async () => {
 });
 
 test("MCP schema rejects invalid tool arguments before handler execution", async () => {
-  const vault = new DocsVault();
-  const server = new DocsMcpServer(vault);
+  let providerCalls = 0;
+  const server = new DocsMcpServer(async () => {
+    providerCalls += 1;
+    return new DocsVault();
+  });
   const { clientTransport, close } = await connectPair(server);
   try {
     await sendAndWait(clientTransport, 5, {
@@ -229,13 +237,36 @@ test("MCP schema rejects invalid tool arguments before handler execution", async
       method: "notifications/initialized",
       params: {},
     });
-    const invalid = await sendAndWait(clientTransport, 6, {
-      jsonrpc: "2.0",
-      id: 6,
-      method: "tools/call",
-      params: { name: "search_docs", arguments: { query: "" } },
-    });
-    assert.equal((invalid.result as Record<string, unknown>).isError, true);
+    const cases = [
+      { name: "list_docs", arguments: { extra: true } },
+      { name: "search_docs", arguments: { query: "" } },
+      { name: "fetch_doc", arguments: { path: "../secret.md" } },
+      { name: "get_openapi_spec", arguments: { endpoint: "health" } },
+      { name: "unknown_tool", arguments: {} },
+    ];
+    for (const [index, params] of cases.entries()) {
+      const invalid = await sendAndWait(clientTransport, 6 + index, {
+        jsonrpc: "2.0",
+        id: 6 + index,
+        method: "tools/call",
+        params,
+      });
+      const result = invalid.result as Record<string, unknown>;
+      assert.equal(result.isError, true);
+      assert.deepEqual(result.content, [
+        { type: "text", text: "Invalid tool request." },
+      ]);
+      const resultMeta = result._meta as Record<string, unknown>;
+      assert.equal(resultMeta.errorCode, "INVALID_INPUT");
+      assert.equal(resultMeta.protocolVersion, "2026-07-28");
+      assert.deepEqual(resultMeta.capabilities, ["tools"]);
+      assert.equal(
+        new Date(resultMeta.timestamp as string).toISOString(),
+        resultMeta.timestamp,
+      );
+      assert.doesNotMatch(JSON.stringify(result), /zod|query|secret|health/i);
+    }
+    assert.equal(providerCalls, 0);
   } finally {
     await close();
   }
@@ -289,7 +320,7 @@ test("document results omit URLs when no base URL is configured", async () => {
   }
 });
 
-test("stdio entry serves 2026 tools/list as the first request without initialize", async () => {
+test("stdio entry normalizes a 2026 first-request validation error without initialize", async () => {
   const vault = new DocsVault();
   const [clientTransport, serverTransport] =
     InMemoryTransport.createLinkedPair();
@@ -305,9 +336,26 @@ test("stdio entry serves 2026 tools/list as the first request without initialize
 
   try {
     await clientTransport.start();
-    const listed = await sendAndWait(clientTransport, 7, {
+    const invalid = await sendAndWait(clientTransport, 7, {
       jsonrpc: "2.0",
       id: 7,
+      method: "tools/call",
+      params: {
+        name: "search_docs",
+        arguments: { query: "" },
+        _meta: requestMeta,
+      },
+    });
+    const invalidResult = invalid.result as Record<string, unknown>;
+    assert.equal(invalidResult.isError, true);
+    assert.equal(
+      (invalidResult._meta as Record<string, unknown>).errorCode,
+      "INVALID_INPUT",
+    );
+
+    const listed = await sendAndWait(clientTransport, 8, {
+      jsonrpc: "2.0",
+      id: 8,
       method: "tools/list",
       params: { _meta: requestMeta },
     });
@@ -315,9 +363,9 @@ test("stdio entry serves 2026 tools/list as the first request without initialize
     assert.equal(Array.isArray(result.tools), true);
     assert.equal(typeof result._meta, "object");
 
-    const discovered = await sendAndWait(clientTransport, 8, {
+    const discovered = await sendAndWait(clientTransport, 15, {
       jsonrpc: "2.0",
-      id: 8,
+      id: 15,
       method: "server/discover",
       params: { _meta: requestMeta },
     });

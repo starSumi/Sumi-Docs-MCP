@@ -1,0 +1,7 @@
+* @starSumi
+
+/packages/mcp/ @starSumi
+/packages/corpus-contract/ @starSumi
+/apps/web/ @starSumi
+/docs/ @starSumi
+/.github/ @starSumi

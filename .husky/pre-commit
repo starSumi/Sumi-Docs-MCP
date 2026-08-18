@@ -1,0 +1,6 @@
+set -e
+
+node scripts/verify-host-files.mjs --staged
+node scripts/verify-translation-pairing.mjs --cached
+node packages/mcp/scripts/git-hooks/reject-agent-identity.mjs
+pnpm run lint:staged

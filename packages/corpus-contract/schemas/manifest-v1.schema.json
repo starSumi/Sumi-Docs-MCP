@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "manifest-v1.schema.json",
+  "title": "Sumi Docs corpus manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "documents"],
+  "properties": {
+    "version": { "const": 1 },
+    "documents": {
+      "type": "array",
+      "maxItems": 1000,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 1024,
+        "pattern": "^[A-Za-z0-9_/-]+\\.mdx?$",
+        "allOf": [
+          { "not": { "pattern": "^/" } },
+          { "not": { "pattern": "//" } }
+        ]
+      }
+    },
+    "openapi": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^[A-Za-z0-9_/-]+\\.json$",
+      "allOf": [{ "not": { "pattern": "^/" } }, { "not": { "pattern": "//" } }]
+    }
+  }
+}

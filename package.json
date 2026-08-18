@@ -1,0 +1,58 @@
+{
+  "name": "@sumi-os/docs-workspace",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Human and machine-readable Sumi documentation product workspace.",
+  "packageManager": "pnpm@10.26.0",
+  "volta": {
+    "node": "25.5.0",
+    "pnpm": "10.26.0"
+  },
+  "engines": {
+    "node": ">=25.5.0",
+    "pnpm": "10.26.0"
+  },
+  "scripts": {
+    "build": "pnpm --filter @sumi-os/corpus-contract build && pnpm --filter @sumi-os/docs-mcp build && pnpm --filter @sumi-os/docs-web build",
+    "lint": "oxlint packages apps scripts tests --deny-warnings",
+    "duplication": "jscpd --config .jscpd.json packages apps scripts",
+    "test": "pnpm --filter @sumi-os/corpus-contract test && pnpm --filter @sumi-os/docs-mcp test && pnpm --filter @sumi-os/docs-web test",
+    "verify:mcp": "pnpm --filter @sumi-os/corpus-contract build && pnpm --filter @sumi-os/docs-mcp verify:push",
+    "verify:web": "pnpm --filter @sumi-os/docs-web verify:push",
+    "verify:contract": "pnpm --filter @sumi-os/corpus-contract verify",
+    "verify": "pnpm verify:repository-policy && pnpm lint && pnpm duplication && pnpm verify:lockfile && pnpm verify:contract && pnpm verify:mcp && pnpm verify:web",
+    "verify:integration": "pnpm --filter @sumi-os/corpus-contract build && pnpm --filter @sumi-os/docs-mcp build && pnpm --filter @sumi-os/docs-web build && pnpm --filter @sumi-os/docs-web verify:mcp && pnpm verify:hosts",
+    "verify:hosts": "node scripts/verify-host-adapters.mjs",
+    "verify:repository-policy": "node --test tests/repository-policy.test.mjs && node scripts/verify-host-files.mjs --tracked && node scripts/verify-workflows.mjs && pnpm verify:i18n",
+    "verify:i18n": "node scripts/verify-translation-pairing.mjs",
+    "verify:lockfile": "node scripts/verify-lockfile.mjs",
+    "smoke:mcp": "pnpm --filter @sumi-os/docs-mcp example:smoke",
+    "build:sea": "pnpm --filter @sumi-os/corpus-contract build && pnpm --filter @sumi-os/docs-mcp build:sea",
+    "benchmark:cold-start": "pnpm --filter @sumi-os/docs-mcp benchmark:cold-start",
+    "pack:mcp": "pnpm --filter @sumi-os/docs-mcp pack --dry-run",
+    "clean": "pnpm --if-present --recursive clean",
+    "commitlint": "commitlint",
+    "lint:staged": "lint-staged --fail-on-changes",
+    "preinstall": "node scripts/enforce-package-manager.mjs",
+    "prepare": "node .husky/install.mjs"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^21.2.1",
+    "@commitlint/config-conventional": "^21.2.0",
+    "husky": "^9.1.7",
+    "jscpd": "5.0.12",
+    "lint-staged": "^17.3.0",
+    "oxlint": "1.78.0",
+    "prettier": "^3.9.6",
+    "smol-toml": "^1.8.0",
+    "yaml": "^2.4.5"
+  },
+  "lint-staged": {
+    "packages/mcp/**/*.{ts,tsx,mts,cts}": [
+      "oxlint --deny-warnings",
+      "prettier --check"
+    ],
+    "**/*.{js,mjs,cjs,astro,json,md,mdx,css,yaml,yml}": "prettier --check"
+  },
+  "license": "MIT"
+}

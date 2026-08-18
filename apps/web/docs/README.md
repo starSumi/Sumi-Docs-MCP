@@ -2,7 +2,8 @@
 
 This directory describes how the documentation application is changed and
 released. Product pages and the machine-readable showcase corpus are authored
-under `src/content/docs/`.
+under the workspace root `docs/` and reviewed through
+`src/content-catalog.ts`.
 
 | Document                          | Purpose                                                              |
 | --------------------------------- | -------------------------------------------------------------------- |

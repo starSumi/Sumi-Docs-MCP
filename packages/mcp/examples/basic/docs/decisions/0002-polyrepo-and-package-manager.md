@@ -12,8 +12,8 @@
 ADR-0001 separates the headless MCP data plane from the human-facing Astro and
 Starlight site, but leaves the repository and package-manager topology open.
 
-The MCP server is already an npm package with a committed `package-lock.json`,
-npm-based scripts, release checks, Git hooks, and CI definitions. The website is
+The MCP server is an npm package with a committed `package-lock.json`, npm
+scripts, release checks, Git hooks, and CI definitions. The website is
 a new independently deployed static application. The two applications do not
 share runtime code, release versions, or an atomic deployment requirement. Their
 shared boundary is a versioned content projection: raw documentation, optional

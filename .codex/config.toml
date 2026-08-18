@@ -1,0 +1,4 @@
+[mcp_servers.sumi_docs]
+command = "pnpm"
+args = ["--filter", "@sumi-os/docs-mcp", "exec", "sumi-docs-mcp", "serve"]
+startup_timeout_sec = 15

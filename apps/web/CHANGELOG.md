@@ -2,6 +2,15 @@
 
 This file records user-visible changes to the documentation site.
 
+## Unreleased
+
+- Replaced separate sidebar and publication mappings with one reviewed content
+  catalog.
+- Added a parallel immutable manifest v2 projection with explicit locale,
+  route, digest, navigation, and source provenance metadata while preserving
+  manifest v1.
+- Added build-time source drift detection before projection promotion.
+
 ## 0.1.0 - 2026-08-14
 
 - Added an Astro and Starlight documentation site with English and Simplified

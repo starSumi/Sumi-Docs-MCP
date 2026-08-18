@@ -1,2 +1,0 @@
-npm run commitlint -- --edit "$1"
-node scripts/git-hooks/reject-agent-attribution.mjs "$1"

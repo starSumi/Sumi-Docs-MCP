@@ -1,0 +1,48 @@
+---
+title: Agent 宿主集成
+description: 在不强制要求 Skill 的前提下连接 Codex、Claude Code 和 VS Code。
+---
+
+# Agent 宿主集成
+
+克隆仓库后先构建一次：
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm run build
+node packages/mcp/dist/index.js doctor --json
+```
+
+之后，仓库通过各宿主原生、可审阅的项目配置提供同一个 stdio 服务。
+
+| 宿主        | 项目配置             | 信任行为                                         |
+| ----------- | -------------------- | ------------------------------------------------ |
+| Codex       | `.codex/config.toml` | 只有受信项目才应用项目配置。                     |
+| Claude Code | `.mcp.json`          | 使用项目前需要批准项目级服务。                   |
+| VS Code     | `.vscode/mcp.json`   | 编辑器会在启动 workspace 定义的 MCP 服务前询问。 |
+
+将仓库根目录作为 workspace 打开。Codex 使用 pnpm workspace 启动器，因此会话从仓库
+子目录启动时命令仍然有效。Claude Code 和 VS Code 使用各自记录的项目根变量，直接启动
+编译后的入口，不经过包管理器的 stdout 包装。
+
+修改配置或重新构建 MCP package 后，在宿主中重启 MCP 服务。每个服务进程只保留一个
+只读语料快照，不进行 live reload。
+
+## 无 Skill fallback
+
+宿主配置本身已经足够。Agent 无需加载 Skill，就可以调用 `list_docs`、按关键词搜索、
+按列表中的精确路径获取文档，以及查询 OpenAPI。MCP 初始化 instructions 会说明这套流程
+以及只读、进程快照边界。
+
+可选的 `$sumi-docs-maintain` Skill 只负责维护路由：帮助 Agent 判断仓库改动属于哪个
+package、需要哪些验证门。它不是协议依赖，也不会通过 MCP 写入文档。
+
+## 默认目录与导航
+
+未提供 CLI source 时，`sumi-docs.config.json` 选择根 `docs/`。如果没有该文件，发现逻辑
+回退到最近可信 Git 项目根目录的 `docs/`。在 Git 之外不会向父目录搜索，因此父级
+`.sumi` workspace 容器不会被误认为产品状态目录。
+
+MCP 没有展示导航，`list_docs` 以确定顺序返回所有 Markdown 或 MDX 路径。网站使用经过
+审阅的 catalog 管理标签、顺序、语言配对和路由。新增根文档会有意触发 Web omissions
+门失败，直到两个语言版本都完成登记。

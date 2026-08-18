@@ -3,6 +3,19 @@
 This file records user-visible changes. Internal phase notes are retained under
 `docs/history/` and are not release records.
 
+## Unreleased
+
+- Made the `serve` documentation source optional through bounded Git-aware
+  project discovery and a strict `sumi-docs.config.json` contract.
+- Added `--config` with explicit CLI precedence and containment checks for
+  configured local paths.
+- Added the read-only `doctor` command with human and JSON reports for runtime,
+  discovery, corpus, and OpenAPI validation.
+- Added self-contained MCP initialization instructions while preserving the
+  existing four-tool surface and manifest v1 behavior.
+- Prevented non-Git discovery from walking into parent directories such as a
+  workspace container named `.sumi`.
+
 ## 0.1.0 - 2026-08-12
 
 - Implemented Markdown/MDX and OpenAPI parsing.
@@ -13,8 +26,8 @@ This file records user-visible changes. Internal phase notes are retained under
   documentation.
 - Added deterministic Git hooks, remote commit-policy checks, and a guarded
   history-rewrite playbook.
-- Added a human-gated GitHub Releases candidate pipeline with checksums,
-  CycloneDX SBOM, provenance, and draft-only promotion.
+- Added commit-policy checks and a documented human-acceptance boundary for
+  release candidates.
 - Corrected the development commands and npm packaging preflight.
 - Moved standalone build output to ignored `artifacts/bin/`.
 - Clarified that search is lexical, stdio is the only transport, and the corpus

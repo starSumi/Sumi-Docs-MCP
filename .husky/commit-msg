@@ -1,0 +1,4 @@
+set -e
+
+pnpm run commitlint -- --edit "$1"
+node packages/mcp/scripts/git-hooks/reject-agent-attribution.mjs "$1"

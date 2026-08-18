@@ -27,18 +27,20 @@ export function normalizeBaseUrl(value: string): string {
 export function buildDocumentUrl(
   baseUrl: string,
   documentPath: string,
+  route?: string,
 ): string {
+  if (route) return new URL(route, baseUrl).href;
+
   const segments = documentPath
     .replace(/\\/g, "/")
     .replace(MARKDOWN_EXTENSION, "")
     .split("/");
-  const isDirectoryIndex = segments.at(-1)?.toLowerCase() === "index";
-  if (isDirectoryIndex) segments.pop();
+  if (segments.at(-1)?.toLowerCase() === "index") segments.pop();
 
   const pagePath = segments
     .map((segment) => encodeURIComponent(segment))
     .join("/");
-  const relativeUrl = isDirectoryIndex && pagePath ? `${pagePath}/` : pagePath;
+  const relativeUrl = pagePath ? `${pagePath}/` : "";
 
   return new URL(relativeUrl, baseUrl).href;
 }

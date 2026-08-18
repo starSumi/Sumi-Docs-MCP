@@ -1,25 +1,28 @@
+import {
+  assertIntegrity,
+  parseCurrentLocatorV2,
+  parseLocatedManifestV2,
+  parseManifestV1,
+} from "@sumi-os/corpus-contract";
+import type {
+  IntegrityDescriptor,
+  ManifestV1,
+  ManifestV2,
+} from "@sumi-os/corpus-contract";
+
 const MANIFEST_FILE_NAME = "sumi-docs-manifest.json";
 const MAX_MANIFEST_BYTES = 256 * 1024;
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
 const MAX_OPENAPI_BYTES = 8 * 1024 * 1024;
 const MAX_TOTAL_DOCUMENT_BYTES = 64 * 1024 * 1024;
-const MAX_DOCUMENTS = 1_000;
 const DOWNLOAD_CONCURRENCY = 8;
 const FETCH_TIMEOUT_MS = 10_000;
-const MAX_PATH_LENGTH = 1_024;
-const DOCUMENT_PATH = /^[a-zA-Z0-9_/-]+\.mdx?$/;
-const OPENAPI_PATH = /^[a-zA-Z0-9_/-]+\.json$/;
-
-interface RemoteManifest {
-  version: 1;
-  documents: string[];
-  openapi?: string;
-}
 
 export interface RemoteDocument {
   path: string;
   content: string;
   sourceUrl: string;
+  route?: string;
   lastModified?: Date;
 }
 
@@ -38,15 +41,6 @@ function isLoopback(hostname: string): boolean {
     hostname === "127.0.0.1" ||
     hostname === "[::1]" ||
     hostname === "::1"
-  );
-}
-
-function isRestrictedRelativePath(value: string, pattern: RegExp): boolean {
-  return (
-    value.length <= MAX_PATH_LENGTH &&
-    pattern.test(value) &&
-    !value.startsWith("/") &&
-    !value.includes("//")
   );
 }
 
@@ -78,65 +72,19 @@ export function normalizeRemoteManifestUrl(value: string): URL {
   return url;
 }
 
-function validateManifest(value: unknown): RemoteManifest {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) {
-    throw new Error("Remote manifest must be a JSON object.");
-  }
-  const candidate = value as Record<string, unknown>;
-  const knownKeys = new Set(["version", "documents", "openapi"]);
-  if (Object.keys(candidate).some((key) => !knownKeys.has(key))) {
-    throw new Error("Remote manifest contains an unknown field.");
-  }
-  if (candidate.version !== 1 || !Array.isArray(candidate.documents)) {
-    throw new Error(
-      "Remote manifest requires version 1 and a documents array.",
-    );
-  }
-  if (candidate.documents.length > MAX_DOCUMENTS) {
-    throw new Error(`Remote manifest exceeds ${MAX_DOCUMENTS} documents.`);
-  }
-  if (
-    candidate.documents.some(
-      (path) =>
-        typeof path !== "string" ||
-        !isRestrictedRelativePath(path, DOCUMENT_PATH),
-    )
-  ) {
-    throw new Error(
-      "Every remote document must be a restricted relative Markdown/MDX path.",
-    );
-  }
-  const documents = candidate.documents as string[];
-  if (new Set(documents).size !== documents.length) {
-    throw new Error("Remote manifest contains duplicate document paths.");
-  }
-  if (
-    candidate.openapi !== undefined &&
-    (typeof candidate.openapi !== "string" ||
-      !isRestrictedRelativePath(candidate.openapi, OPENAPI_PATH))
-  ) {
-    throw new Error(
-      "Remote OpenAPI entry must be a restricted relative JSON path.",
-    );
-  }
-  return {
-    version: 1,
-    documents,
-    ...(typeof candidate.openapi === "string" && {
-      openapi: candidate.openapi,
-    }),
-  };
+function isV2LocatorUrl(url: URL): boolean {
+  return url.pathname.endsWith("/_mcp/v2/current.json");
 }
 
 async function readBoundedResponse(
   response: Response,
   maxBytes: number,
-): Promise<{ text: string; size: number }> {
+): Promise<{ bytes: Uint8Array; text: string; size: number }> {
   const declaredLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
     throw new Error(`Remote response exceeds ${maxBytes} bytes.`);
   }
-  if (!response.body) return { text: "", size: 0 };
+  if (!response.body) return { bytes: new Uint8Array(), text: "", size: 0 };
 
   const reader = response.body.getReader();
   const chunks: Uint8Array[] = [];
@@ -156,18 +104,29 @@ async function readBoundedResponse(
     reader.releaseLock();
   }
 
-  const content = Buffer.concat(
+  const bytes = Buffer.concat(
     chunks.map((chunk) => Buffer.from(chunk)),
     size,
   );
-  return { text: content.toString("utf8"), size };
+  let text: string;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    throw new Error("Remote documentation response must be valid UTF-8.");
+  }
+  return { bytes, text, size };
 }
 
 async function fetchText(
   url: URL,
   maxBytes: number,
   signal?: AbortSignal,
-): Promise<{ text: string; size: number; lastModified?: Date }> {
+): Promise<{
+  bytes: Uint8Array;
+  text: string;
+  size: number;
+  lastModified?: Date;
+}> {
   const response = await fetch(url, {
     redirect: "manual",
     signal: signal
@@ -196,34 +155,39 @@ async function fetchText(
   };
 }
 
-export async function loadRemoteCorpus(source: string): Promise<RemoteCorpus> {
-  const manifestUrl = normalizeRemoteManifestUrl(source);
-  const manifestResponse = await fetchText(manifestUrl, MAX_MANIFEST_BYTES);
-  let manifestValue: unknown;
-  try {
-    manifestValue = JSON.parse(manifestResponse.text);
-  } catch {
-    throw new Error("Remote documentation manifest is not valid JSON.");
-  }
-  const manifest = validateManifest(manifestValue);
+interface RemoteDocumentEntry {
+  path: string;
+  urlPath?: string;
+  route?: string;
+  integrity?: IntegrityDescriptor;
+}
 
-  const documents = new Array<RemoteDocument>(manifest.documents.length);
+async function downloadCorpus(
+  documentsToLoad: RemoteDocumentEntry[],
+  openApiToLoad: RemoteDocumentEntry | undefined,
+  contentBaseUrl: URL,
+): Promise<RemoteCorpus> {
+  const documents = new Array<RemoteDocument>(documentsToLoad.length);
+
   const downloads = new AbortController();
   let nextIndex = 0;
   let totalBytes = 0;
   const workers = Array.from(
-    { length: Math.min(DOWNLOAD_CONCURRENCY, manifest.documents.length) },
+    { length: Math.min(DOWNLOAD_CONCURRENCY, documentsToLoad.length) },
     async () => {
-      while (nextIndex < manifest.documents.length) {
+      while (nextIndex < documentsToLoad.length) {
         const index = nextIndex++;
-        const path = manifest.documents[index];
-        if (!path) continue;
-        const sourceUrl = new URL(path, manifestUrl);
+        const entry = documentsToLoad[index];
+        if (!entry) continue;
+        const sourceUrl = new URL(entry.urlPath ?? entry.path, contentBaseUrl);
         const response = await fetchText(
           sourceUrl,
           MAX_DOCUMENT_BYTES,
           downloads.signal,
         );
+        if (entry.integrity) {
+          assertIntegrity(response.bytes, entry.integrity, entry.path);
+        }
         totalBytes += response.size;
         if (totalBytes > MAX_TOTAL_DOCUMENT_BYTES) {
           throw new Error(
@@ -231,9 +195,10 @@ export async function loadRemoteCorpus(source: string): Promise<RemoteCorpus> {
           );
         }
         documents[index] = {
-          path,
+          path: entry.path,
           content: response.text,
           sourceUrl: sourceUrl.href,
+          ...(entry.route && { route: entry.route }),
           ...(response.lastModified && { lastModified: response.lastModified }),
         };
       }
@@ -248,17 +213,90 @@ export async function loadRemoteCorpus(source: string): Promise<RemoteCorpus> {
   }
 
   let openApiContent: string | undefined;
-  if (manifest.openapi) {
-    openApiContent = (
-      await fetchText(
-        new URL(manifest.openapi, manifestUrl),
-        MAX_OPENAPI_BYTES,
-        downloads.signal,
-      )
-    ).text;
+  if (openApiToLoad) {
+    const response = await fetchText(
+      new URL(openApiToLoad.urlPath ?? openApiToLoad.path, contentBaseUrl),
+      MAX_OPENAPI_BYTES,
+      downloads.signal,
+    );
+    if (openApiToLoad.integrity) {
+      assertIntegrity(
+        response.bytes,
+        openApiToLoad.integrity,
+        openApiToLoad.path,
+      );
+    }
+    openApiContent = response.text;
   }
   return {
     documents,
     ...(openApiContent !== undefined && { openApiContent }),
   };
+}
+
+function v1Entries(manifest: ManifestV1): {
+  documents: RemoteDocumentEntry[];
+  openapi?: RemoteDocumentEntry;
+} {
+  return {
+    documents: manifest.documents.map((path) => ({ path })),
+    ...(manifest.openapi && { openapi: { path: manifest.openapi } }),
+  };
+}
+
+function v2Entries(manifest: ManifestV2): {
+  documents: RemoteDocumentEntry[];
+  openapi?: RemoteDocumentEntry;
+} {
+  return {
+    documents: manifest.documents.map(({ path, route, bytes, sha256 }) => ({
+      path,
+      urlPath: `docs/${path}`,
+      route,
+      integrity: { bytes, sha256 },
+    })),
+    ...(manifest.openapi && {
+      openapi: {
+        path: manifest.openapi.path,
+        urlPath: `docs/${manifest.openapi.path}`,
+        integrity: {
+          bytes: manifest.openapi.bytes,
+          sha256: manifest.openapi.sha256,
+        },
+      },
+    }),
+  };
+}
+
+export async function loadRemoteCorpus(source: string): Promise<RemoteCorpus> {
+  const manifestUrl = normalizeRemoteManifestUrl(source);
+  const initialResponse = await fetchText(manifestUrl, MAX_MANIFEST_BYTES);
+  let initialValue: unknown;
+  try {
+    initialValue = JSON.parse(initialResponse.text);
+  } catch {
+    throw new Error("Remote documentation manifest is not valid JSON.");
+  }
+
+  if (!isV2LocatorUrl(manifestUrl)) {
+    const entries = v1Entries(parseManifestV1(initialValue));
+    return downloadCorpus(entries.documents, entries.openapi, manifestUrl);
+  }
+
+  const locator = parseCurrentLocatorV2(initialValue);
+  const immutableManifestUrl = new URL(locator.manifest, manifestUrl);
+  const immutableManifestResponse = await fetchText(
+    immutableManifestUrl,
+    MAX_MANIFEST_BYTES,
+  );
+  const manifest = parseLocatedManifestV2(
+    locator,
+    immutableManifestResponse.bytes,
+  );
+  const entries = v2Entries(manifest);
+  return downloadCorpus(
+    entries.documents,
+    entries.openapi,
+    immutableManifestUrl,
+  );
 }

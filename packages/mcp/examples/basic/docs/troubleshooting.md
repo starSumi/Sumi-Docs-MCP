@@ -3,22 +3,37 @@
 ## The server appears to hang
 
 A stdio MCP server waits for JSON-RPC input and does not present an interactive
-prompt. Run `npm run example:smoke` to verify the process, or attach it through an
+prompt. Run `pnpm run example:smoke` to verify the process, or attach it through an
 MCP client. Ordinary diagnostics appear on stderr.
 
 ## The CLI prints Usage and exits
 
-The `serve` command and a local directory or remote source URL are required:
+Use `serve` with an explicit source, tracked config, or discoverable project
+`docs/` directory:
 
 ```powershell
 node dist/index.js serve C:\absolute\path\to\docs
+node dist/index.js doctor --json
 ```
+
+If no source is supplied, discovery stops at the nearest Git worktree root. In
+a non-Git directory it never searches above the current directory.
 
 ## A client cannot find the corpus
 
-Use absolute paths in client configuration. Relative paths are resolved from the
-MCP server process working directory, which GUI clients may choose independently
-of the project directory.
+Run `doctor --json` with the same command arguments and working directory as the
+client. Use an absolute source or `--config` path when the client working
+directory is not controlled.
+
+Doctor redacts external paths by default. Add `--show-paths` only for local
+interactive diagnosis, and do not paste that output into a public issue. Stack
+traces and URL credentials remain redacted.
+
+## Project config is rejected
+
+`sumi-docs.config.json` is strict JSON. Remove comments and unknown fields,
+keep a supplied `version` at `1`, and keep configured local paths inside the
+project root. CLI values override the matching config values.
 
 ## OpenAPI is unavailable
 
@@ -43,11 +58,11 @@ document or OpenAPI file.
 
 ## A local document URL does not open
 
-The MCP process does not host HTTP pages. Start `npm run preview:docs` in a
+The MCP process does not host HTTP pages. Start `pnpm run preview:docs` in a
 separate terminal and keep it running. The preview port must match the port in
 `--base-url`, and both processes must point to the same documentation root.
 
 ## SEA build fails
 
 Check `node --version`. Native `--build-sea` requires Node.js 25.5 or newer for
-this project. A normal `npm run build` does not create the standalone executable.
+this project. A normal `pnpm run build` does not create the standalone executable.

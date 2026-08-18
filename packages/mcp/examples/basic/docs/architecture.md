@@ -9,7 +9,7 @@
 - [ADR-0005: Discover project documentation without owning `.sumi`](decisions/0005-project-discovery-and-local-state-placement.md)
 - [ADR-0006: Publish an immutable version 2 content projection](decisions/0006-immutable-content-projection.md)
 - [ADR-0007: Integrate through native agent-host contracts](decisions/0007-native-agent-host-integration.md)
-- [ADR-0008: Unify the product in an npm workspace](decisions/0008-product-workspace-topology.md)
+- [ADR-0008: Unify the product in a pnpm workspace](decisions/0008-product-workspace-topology.md)
 - [ADR-0009: Keep reconciliation state outside the MCP data plane](decisions/0009-reconciliation-and-control-plane-state.md)
 - [ADR-0010: Keep Node.js until a Rust spike passes a parity gate](decisions/0010-runtime-migration-gate.md)
 
@@ -23,6 +23,12 @@ MCP client
   -> Markdown/MDX parser or OpenAPI parser
   -> local read-only files or bounded remote manifest fetches
 ```
+
+Before the transport starts, `src/project-config.ts` resolves an explicit CLI
+source, strict tracked config, or bounded `docs/` convention and verifies that a
+local corpus is readable and non-empty. This startup discovery has no client or
+session state. `src/doctor.ts` applies the same resolver and fully loads the
+corpus for a read-only diagnostic without starting MCP.
 
 The MCP server is created without loading the corpus. `tools/list` and discovery
 can respond immediately. The first tool invocation that needs content constructs
@@ -42,6 +48,9 @@ The parsed documentation index is process-local read-only state.
 | `src/mcp/`    | validate tool input and map calls to VFS operations           |
 | `src/types/`  | shared TypeScript contracts only                              |
 | `src/utils/`  | pure path and text helpers                                    |
+
+The CLI owns project discovery and diagnostics. It passes one resolved source to
+the VFS; project config parsing does not enter the MCP request handlers.
 
 The protocol layer does not perform direct file I/O. The VFS does not know about
 JSON-RPC. UI frameworks, DOM libraries, databases, and HTTP frameworks are out of

@@ -7,7 +7,7 @@ fixes are applied to the current source branch.
 
 ## Reporting
 
-Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/starSumi/sumi-docs-web/security/advisories/new).
+Report vulnerabilities through [GitHub private vulnerability reporting](https://github.com/starSumi/sumi-docs/security/advisories/new).
 Do not include credentials, private content, or exploit details in a public
 issue. The repository owner will acknowledge a report and coordinate a fix
 before disclosure.
@@ -15,7 +15,7 @@ before disclosure.
 ## Trust boundary
 
 Astro compiles repository-owned Markdown and MDX at build time. Only reviewed,
-trusted content may enter `src/content/docs/`; remote or user-supplied MDX must
+trusted content may enter the workspace root `docs/`; remote or user-supplied MDX must
 never be executed. The generated site and everything under `dist/_mcp/` are
 public distribution outputs, so they must not contain secrets, private URLs, or
 internal-only documentation.

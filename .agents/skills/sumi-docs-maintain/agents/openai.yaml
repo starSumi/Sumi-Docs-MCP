@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sumi Docs Maintainer"
+  short_description: "Maintain the reviewed human and agent documentation corpus"
+  default_prompt: "Use $sumi-docs-maintain to reconcile product changes with the reviewed documentation corpus."

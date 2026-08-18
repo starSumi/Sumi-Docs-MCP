@@ -1,6 +1,5 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { readFile } from "node:fs/promises";
 import { test } from "node:test";
 
 function validate(siteUrl) {
@@ -33,23 +32,3 @@ for (const [name, value] of [
     assert.notEqual(result.status, 0);
   });
 }
-
-test("site candidate remains immutable and human-gated", async () => {
-  const workflow = await readFile(
-    ".github/workflows/site-candidate.yml",
-    "utf8",
-  );
-  const actionReferences = [...workflow.matchAll(/uses:\s+(\S+)/g)].map(
-    (match) => match[1],
-  );
-
-  assert.ok(actionReferences.length > 0);
-  for (const action of actionReferences) {
-    assert.match(action, /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+@[0-9a-f]{40}$/);
-  }
-  assert.match(workflow, /workflow_dispatch:/);
-  assert.match(workflow, /REQUESTED_COMMIT/);
-  assert.match(workflow, /SITE_URL:/);
-  assert.match(workflow, /Upload candidate for human acceptance/);
-  assert.doesNotMatch(workflow, /deploy-pages|gh-pages|release create/i);
-});

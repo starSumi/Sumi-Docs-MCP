@@ -10,7 +10,7 @@ tests.
 Run the end-to-end stdio check from the repository root:
 
 ```powershell
-npm run example:smoke
+pnpm run example:smoke
 ```
 
 `clients/launcher-template.json` shows the process command and arguments used by
@@ -24,7 +24,7 @@ with the real site prefix or remove that argument pair.
 launcher. Its positional URL is the machine-readable manifest base; its
 `--base-url` is the rendered site people should open.
 
-To exercise remote source mode without deploying a site, run `npm run
+To exercise remote source mode without deploying a site, run `pnpm run
 preview:docs` and then launch the MCP server with
 `node dist/index.js serve http://127.0.0.1:4173/`. The preview generates the
 remote manifest and serves the checked-in OpenAPI document.

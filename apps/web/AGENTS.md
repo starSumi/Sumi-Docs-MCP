@@ -5,16 +5,16 @@ These instructions apply to the Sumi Docs Web repository.
 ## Project contract
 
 - Classification: static Astro and Starlight documentation site
-- Runtime: Node.js 22.12.0 or newer
-- Package manager: npm with a committed `package-lock.json`
+- Runtime: Node.js 25.5.0 or newer
+- Package manager: pnpm workspace with the committed root `pnpm-lock.yaml`
 - Output: static files under `dist/`
 - Machine projection: `dist/_mcp/`
 - Human locales: English at `/`, Simplified Chinese at `/zh-cn/`
 - Theme modes: light, dark, and automatic system preference
 
-The site is a sibling project of Sumi-Docs-MCP, not a workspace package. The
-projects share a published content contract and must not import each other's
-runtime source files.
+The site is the `@sumi-os/docs-web` workspace package. It shares only the pure
+`@sumi-os/corpus-contract` package with the MCP consumer; it must not import MCP
+runtime source files or parsers.
 
 ## Content and trust
 
@@ -22,8 +22,10 @@ Only trusted, reviewed Markdown and MDX may be compiled by Astro. Never execute
 remote or user-supplied MDX. Keep credentials, private URLs, and machine-local
 paths out of published content and frontmatter.
 
-Every machine-readable document must have an explicit entry in
-`astro.config.mjs`. The public MCP manifest remains the strict version 1 shape:
+Every machine-readable document must have an explicit entry in the reviewed
+catalog at `src/content-catalog.ts`. That catalog is the only source for the
+Starlight sidebar, source-to-route map, strict manifest v1, and manifest v2.
+The public MCP manifest v1 remains this exact shape at its existing URL:
 
 ```json
 {
@@ -33,12 +35,14 @@ Every machine-readable document must have an explicit entry in
 }
 ```
 
-Do not add route objects or other fields to that manifest. Human route mappings
-belong in the generated `sumi-docs-routes.json` verification artifact.
+Do not add route objects or other fields to v1. Human route mappings remain in
+the generated `sumi-docs-routes.json` verification artifact. The parallel v2
+projection lives under `dist/_mcp/v2/` and uses immutable revision directories;
+schema validation and canonicalization belong to `@sumi-os/corpus-contract`.
 
 ## Ownership
 
-- `src/content/docs/`: reviewed human and machine documentation source
+- `../../docs/`: reviewed human and machine documentation source
 - `src/assets/`: project visual assets
 - `src/styles/`: restrained Starlight customization
 - `integrations/`: bounded build-time publishing behavior
@@ -53,19 +57,19 @@ model credentials or try to connect directly to stdio.
 ## Required validation
 
 ```powershell
-npm test
-npm run build
+pnpm test
+pnpm run build
 ```
 
-For a public deployment candidate, also run `npm run verify:release` with an
+For a public deployment candidate, also run `pnpm run verify:release` with an
 explicit public HTTPS `SITE_URL`. A candidate workflow may package verified
 `dist/` output, but it must not deploy without the repository's human acceptance
 and environment controls.
 
-When the sibling MCP checkout is available and built, also run:
+When the MCP workspace package is built, also run:
 
 ```powershell
-npm run verify:mcp
+pnpm run verify:mcp
 ```
 
 Visually verify desktop and mobile output before handoff. Generated `dist/`,

@@ -1,130 +1,87 @@
 # Release process
 
-This project separates candidate construction, human acceptance, and public
-release. A tag push does not publish anything.
+Candidate construction, human acceptance, and publication are separate gates.
+The current repository automates candidate construction only. It does not
+publish an npm registry package, deploy the documentation site, create a tag, or create a
+GitHub Release.
 
-## One-time repository setup
+## Local preflight
 
-1. Restore or initialize the real Git repository and configure its GitHub
-   remote. Do not manufacture replacement history from a source-only copy.
-2. Create a GitHub environment named `release`.
-3. Configure required reviewers for that environment, enable prevention of
-   self-review, and disable administrator bypass where the repository plan
-   supports those controls.
-4. Require the `CI` workflow on the protected default branch.
-   Require the `Commit policy` check and both operating-system variants of the
-   `verify` job.
-5. Create a `release-exception-approved` issue label. Limit use of that label to
-   release owners.
-6. Enable private vulnerability reporting or publish another private security
-   contact before making the repository public.
-7. Add the real repository, homepage, and issue tracker URLs to `package.json`
-   after the GitHub repository exists.
+Use Node.js 25.5.0 or newer from the workspace root:
 
-The release workflows use only the repository `GITHUB_TOKEN`. They do not need a
-personal access token or release secret. Artifact attestations require a public
-repository on current GitHub Free, Pro, or Team plans; private/internal
-repositories require GitHub Enterprise Cloud.
+```powershell
+pnpm install --frozen-lockfile --ignore-scripts
+pnpm run verify
+pnpm run verify:integration
+pnpm run smoke:mcp
+pnpm run pack:mcp
+pnpm run build:sea
+pnpm --filter @sumi-os/docs-mcp example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm run benchmark:cold-start -- --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
+```
 
-## Build a candidate
+`pnpm run pack:mcp` is a dry run. It validates the package boundary but does not
+produce a release tarball. The cold-start hard limit is 100 ms for every
+measured run; a failed performance command blocks release.
 
-Choose the release version before building a candidate. Update `package.json`
-and `CHANGELOG.md`, run the full validation suite, and commit those release-prep
-changes. The candidate must be built from that immutable commit; no version or
-changelog edit is allowed between acceptance and tagging.
+## Build a private candidate
 
-Run the `Release candidate` workflow manually. Select the branch or tag whose
-tip is under test and enter that exact full 40-character SHA. The workflow
-rejects an input SHA that differs from its dispatch ref, so the workflow
-provenance, checkout, and candidate manifest identify the same commit. It runs
-static checks and tests on Node.js 25.5.0,
-builds and smoke-tests the Windows x64 SEA executable, records the cold-start
-benchmark, creates checksums, generates provenance attestations, and uploads one
-candidate artifact retained for 14 days.
+Run the repository `Acceptance candidate` workflow from the latest `main` and
+provide:
 
-The candidate contains:
+- the exact full 40-character `main` commit SHA;
+- the HTTPS site origin used for canonical URLs.
 
-- `sumi-docs-mcp-v<version>-windows-x64.zip`
-- `sumi-os-docs-mcp-<version>.tgz`
-- `SHA256SUMS`
-- `RELEASE-MANIFEST.json`
-- `benchmark.json`
-- `sbom.cdx.json` (CycloneDX)
+The unprivileged build job checks that the selected SHA remains the latest
+`main`, runs the repository and cross-product verification suites on Node.js
+25.5.0, builds and smoke-tests the Windows executable, and records 30 cold-start
+runs. It uploads one commit-bound artifact retained for 14 days:
 
-The workflow also creates a signed SBOM attestation that binds the CycloneDX
-document to the ZIP and npm tarball.
+- `sumi-docs-mcp-<commit>.zip`;
+- `sumi-docs-mcp-<commit>.zip.sha256`;
+- `sumi-docs-web-<commit>.zip`;
+- `sumi-docs-web-<commit>.zip.sha256`;
+- `cold-start.json`.
 
-The source archives shown by GitHub Releases are generated from the tag, so the
-workflow does not upload a duplicate `git archive` tarball.
+The workflow uploads the raw evidence before enforcing the performance gate, so
+a failed run can be diagnosed without treating its artifact as accepted.
+
+An optional, separate job attests the two ZIP files only when the repository
+variable `ENABLE_PRIVATE_ATTESTATION` is `true` and the protected
+`candidate-attestation` environment is available. A skipped attestation is an
+open release gate. It is not equivalent to a successful attestation.
 
 ## Human acceptance
 
-Download the candidate from the workflow run. Verify the checksums and test the
-archive that would be released, not a locally rebuilt executable.
+Download the artifact from the selected workflow run and verify each SHA-256
+sidecar against its sibling ZIP. Test the archived executable rather than a
+local rebuild:
 
 ```powershell
-Get-FileHash .\sumi-docs-mcp-v*-windows-x64.zip -Algorithm SHA256
-gh attestation verify .\sumi-docs-mcp-v*-windows-x64.zip --repo OWNER/REPOSITORY
-```
-
-Extract the ZIP and run:
-
-```powershell
+Get-FileHash .\sumi-docs-mcp-<commit>.zip -Algorithm SHA256
 .\sumi-docs-mcp.exe --version
 node path\to\scripts\smoke-example.js --executable .\sumi-docs-mcp.exe
 ```
 
-Also connect the executable to the intended MCP client and exercise
-`list_docs`, `search_docs`, `fetch_doc`, and `get_openapi_spec` against a copy of
-representative documentation. Record the candidate workflow run ID and the
-accepted commit SHA. A failed hard requirement must be fixed or explicitly
-accepted as a documented release exception before proceeding.
+Connect the candidate to each supported host and exercise `list_docs`,
+`search_docs`, `fetch_doc`, and `get_openapi_spec` against representative local
+and remote corpora. Verify both documentation locales, all supported theme
+modes, canonical page URLs, and the `/_mcp/` projection. Record the commit SHA,
+workflow run, checksums, tester, and acceptance time.
 
-The Windows executable is currently unsigned, and the manifest states that
-fact. Before a production release, either configure Authenticode signing with a
-protected signing identity or record an explicit release-owner decision to ship
-an unsigned binary. The current draft workflow requires that decision as an
-open repository issue carrying the `release-exception-approved` label.
-Checksums and provenance attestations establish artifact identity but are not a
-substitute for operating-system code signing.
+The Windows executable is currently unsigned. Authenticode signing or an
+explicit release-owner exception remains required before distributing it as a
+production binary. SHA-256 sidecars and provenance attestations identify an
+artifact; they do not replace operating-system code signing.
 
-## Prepare the release draft
+## Promotion boundary
 
-After acceptance, confirm that the current commit is the accepted candidate
-commit and create an annotated tag on exactly that commit:
+Do not create or push a release tag from this procedure. A later promotion
+workflow must consume the exact accepted artifact without rebuilding it, verify
+its checksums and accepted commit, enforce signing and provenance policy, and
+provide a rollback target. Until that workflow exists and passes human review,
+the repository remains a private candidate.
 
-```powershell
-git status --short
-git rev-parse HEAD
-git tag -a v0.1.0 -m "Release 0.1.0"
-git push origin v0.1.0
-```
-
-Run `Prepare release draft` with the accepted candidate run ID, the tag, and the
-confirmation value `ACCEPTED`. Set `performance_exception` to `NONE` when the
-cold-start hard gate passed. If it failed, the only accepted value is a tracking
-issue URL in this repository. Set `unsigned_binary_exception` to the repository
-issue that records the release-owner decision to distribute the current
-unsigned executable. Each exception issue must remain open and carry the
-`release-exception-approved` label. The protected
-`release` environment pauses the job for reviewer approval. The job then
-verifies that:
-
-- the tag is annotated and matches `package.json`;
-- the tag commit is the candidate workflow commit;
-- the candidate workflow completed successfully;
-- every downloaded asset matches `SHA256SUMS`;
-- the unsigned executable has a tracked, approved release exception;
-- GitHub recognizes the candidate provenance attestations.
-
-It reuses the accepted candidate assets and does not rebuild them. The workflow
-creates a draft Release. Review its notes and assets in GitHub, then publish it
-manually. Enable immutable releases in repository settings when that feature is
-available for the repository.
-
-## Version policy
-
-Do not create a `v1.0.0` tag while the application reports another version.
-Until a deliberate stable-contract decision is made, the repository remains on
-the version recorded in `package.json`. Version changes must update the CLI and
-MCP server identity and pass the version-consistency test in the same commit.
+Version changes must update package metadata, CLI and MCP server identity, and
+the changelog in the same commit. Do not create a `v1.0.0` tag while the
+application reports another version.

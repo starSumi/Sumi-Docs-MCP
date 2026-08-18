@@ -6,6 +6,9 @@ mode. It is a source mode, not an HTTP MCP transport.
 
 ## Manifest
 
+The legacy v1 manifest remains the default for a directory URL and for an
+ordinary JSON URL. This preserves existing clients and publishers.
+
 Publish `sumi-docs-manifest.json` beside the source documents:
 
 ```json
@@ -27,6 +30,18 @@ Start the server with either the directory URL or the complete manifest URL:
 node dist/index.js serve https://content.example.com/product/
 node dist/index.js serve https://content.example.com/product/sumi-docs-manifest.json
 ```
+
+For a publisher that emits the Sumi v2 immutable projection, pass the exact
+locator URL:
+
+```powershell
+node dist/index.js serve https://docs.example.com/_mcp/v2/current.json
+```
+
+The loader validates the locator, canonical manifest bytes and revision, then
+verifies the byte count and SHA-256 digest of every document and optional
+OpenAPI file before accepting the snapshot. Supplying a v2 manifest directly
+is not supported; the mutable locator is the only v2 entry point.
 
 HTTPS is required except for loopback HTTP used during local development. URLs
 with credentials, query strings, or fragments are rejected. Authentication
@@ -70,7 +85,7 @@ document paths. The server does not check that those pages exist.
 Terminal 1 hosts the example source and generated manifest:
 
 ```powershell
-npm run preview:docs
+pnpm run preview:docs
 ```
 
 Terminal 2 starts the MCP server in remote source mode:

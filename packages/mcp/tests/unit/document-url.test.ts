@@ -11,11 +11,22 @@ test("document URLs preserve the site prefix and encode each path segment", () =
   assert.equal(baseUrl, "https://docs.example.com/product/");
   assert.equal(
     buildDocumentUrl(baseUrl, "guides/first steps.mdx"),
-    "https://docs.example.com/product/guides/first%20steps",
+    "https://docs.example.com/product/guides/first%20steps/",
   );
   assert.equal(
     buildDocumentUrl(baseUrl, "部署/入门.md"),
-    "https://docs.example.com/product/%E9%83%A8%E7%BD%B2/%E5%85%A5%E9%97%A8",
+    "https://docs.example.com/product/%E9%83%A8%E7%BD%B2/%E5%85%A5%E9%97%A8/",
+  );
+});
+
+test("explicit manifest routes override path-derived URLs", () => {
+  assert.equal(
+    buildDocumentUrl(
+      "https://docs.example.com/product/",
+      "guides/start.md",
+      "/manual/getting-started/",
+    ),
+    "https://docs.example.com/manual/getting-started/",
   );
 });
 

@@ -4,24 +4,25 @@
   "description": "Bilingual Astro and Starlight handbook with a machine-readable MCP projection.",
   "private": true,
   "type": "module",
-  "packageManager": "npm@11.15.0",
+  "packageManager": "pnpm@10.26.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/starSumi/sumi-docs-web.git"
+    "url": "git+https://github.com/starSumi/Sumi-Docs-MCP.git",
+    "directory": "apps/web"
   },
-  "homepage": "https://github.com/starSumi/sumi-docs-web#readme",
+  "homepage": "https://github.com/starSumi/Sumi-Docs-MCP/tree/main/apps/web#readme",
   "bugs": {
-    "url": "https://github.com/starSumi/sumi-docs-web/issues"
+    "url": "https://github.com/starSumi/Sumi-Docs-MCP/issues"
   },
   "author": "Sumi OS",
   "license": "MIT",
   "engines": {
-    "node": ">=22.12.0"
+    "node": ">=25.5.0"
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro check && astro build && npm run verify:dist",
-    "build:release": "npm run validate:release-env && npm run build",
+    "build": "astro check && astro build && pnpm run verify:dist",
+    "build:release": "pnpm run validate:release-env && pnpm run build",
     "preview": "astro preview",
     "check": "astro check",
     "test": "node --test tests/**/*.test.mjs",
@@ -32,14 +33,14 @@
     "verify:dist": "node scripts/verify-dist.mjs",
     "verify:mcp": "node scripts/verify-mcp.mjs",
     "validate:release-env": "node scripts/validate-release-env.mjs",
-    "audit:prod": "npm audit --omit=dev --audit-level=high --registry=https://registry.npmjs.org",
-    "verify": "npm run format:check && npm test && npm run test:git-hooks && npm run build",
-    "verify:release": "npm run format:check && npm test && npm run build:release && npm run audit:prod",
-    "verify:push": "npm run verify && npm run audit:prod",
-    "prepare": "node .husky/install.mjs"
+    "audit:prod": "pnpm audit --prod --audit-level high --registry https://registry.npmjs.org",
+    "verify": "pnpm run format:check && pnpm test && pnpm run test:git-hooks && pnpm run build",
+    "verify:release": "pnpm run format:check && pnpm test && pnpm run build:release && pnpm run audit:prod",
+    "verify:push": "pnpm run verify && pnpm run audit:prod"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.41.7",
+    "@sumi-os/corpus-contract": "workspace:*",
     "astro": "^7.2.1",
     "sharp": "^0.35.3"
   },
@@ -50,6 +51,9 @@
     "husky": "^9.1.7",
     "lint-staged": "^17.3.0",
     "prettier": "^3.9.6",
+    "starlight-typedoc": "0.23.1",
+    "typedoc": "0.28.20",
+    "typedoc-plugin-markdown": "4.12.0",
     "typescript": "^5.9.3"
   },
   "lint-staged": {

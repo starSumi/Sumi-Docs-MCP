@@ -7,8 +7,17 @@ import { extname, resolve, sep } from "node:path";
 import { createInterface } from "node:readline";
 
 const outputRoot = resolve("dist");
-const mcpEntry = resolve("..", "Sumi-Docs-MCP", "dist", "index.js");
+const mcpEntry = resolve("..", "..", "packages", "mcp", "dist", "index.js");
 await access(mcpEntry);
+const projectedManifest = JSON.parse(
+  await readFile(
+    resolve(outputRoot, "_mcp", "sumi-docs-manifest.json"),
+    "utf8",
+  ),
+);
+const expectedDocumentPaths = [...projectedManifest.documents].sort(
+  (left, right) => left.localeCompare(right, "en"),
+);
 
 const contentTypes = new Map([
   [".html", "text/html; charset=utf-8"],
@@ -52,10 +61,87 @@ await new Promise((resolveListen, rejectListen) => {
 const address = staticServer.address();
 assert(address && typeof address === "object");
 const baseUrl = `http://127.0.0.1:${address.port}/`;
+const meta = {
+  "io.modelcontextprotocol/protocolVersion": "2026-07-28",
+  "io.modelcontextprotocol/clientInfo": {
+    name: "sumi-docs-web-e2e",
+    version: "1.0.0",
+  },
+  "io.modelcontextprotocol/clientCapabilities": {},
+};
+
+async function readCorpusFromSource(source) {
+  const processHandle = spawn(
+    process.execPath,
+    [mcpEntry, "serve", source, "--base-url", baseUrl],
+    {
+      stdio: ["pipe", "pipe", "pipe"],
+      windowsHide: true,
+    },
+  );
+  const processStderr = [];
+  processHandle.stderr.on("data", (chunk) =>
+    processStderr.push(chunk.toString()),
+  );
+  const processLines = createInterface({ input: processHandle.stdout });
+  const responses = new Map();
+  const corpus = new Promise((resolveCorpus, rejectCorpus) => {
+    const timer = setTimeout(
+      () =>
+        rejectCorpus(
+          new Error(`MCP corpus response timed out: ${processStderr.join("")}`),
+        ),
+      10_000,
+    );
+    processLines.on("line", (line) => {
+      const message = JSON.parse(line);
+      if (typeof message.id === "number") responses.set(message.id, message);
+      if (responses.size !== expectedDocumentPaths.length + 1) return;
+      clearTimeout(timer);
+      resolveCorpus({
+        listed: JSON.parse(
+          responses.get(2)?.result?.content?.[0]?.text ?? "null",
+        ),
+        documents: new Map(
+          expectedDocumentPaths.map((path, index) => [
+            path,
+            JSON.parse(
+              responses.get(100 + index)?.result?.content?.[0]?.text ?? "null",
+            ),
+          ]),
+        ),
+      });
+    });
+  });
+  try {
+    const requests = [
+      {
+        jsonrpc: "2.0",
+        id: 2,
+        method: "tools/call",
+        params: { name: "list_docs", arguments: {}, _meta: meta },
+      },
+      ...expectedDocumentPaths.map((path, index) => ({
+        jsonrpc: "2.0",
+        id: 100 + index,
+        method: "tools/call",
+        params: { name: "fetch_doc", arguments: { path }, _meta: meta },
+      })),
+    ];
+    for (const request of requests)
+      processHandle.stdin.write(`${JSON.stringify(request)}\n`);
+    return await corpus;
+  } finally {
+    processLines.close();
+    processHandle.kill();
+  }
+}
+
+const v1Corpus = await readCorpusFromSource(`${baseUrl}_mcp/`);
 
 const child = spawn(
   process.execPath,
-  [mcpEntry, "serve", `${baseUrl}_mcp/`, "--base-url", baseUrl],
+  [mcpEntry, "serve", `${baseUrl}_mcp/v2/current.json`, "--base-url", baseUrl],
   { stdio: ["pipe", "pipe", "pipe"], windowsHide: true },
 );
 const stderr = [];
@@ -71,14 +157,6 @@ lines.on("line", (line) => {
   }
 });
 
-const meta = {
-  "io.modelcontextprotocol/protocolVersion": "2026-07-28",
-  "io.modelcontextprotocol/clientInfo": {
-    name: "sumi-docs-web-e2e",
-    version: "1.0.0",
-  },
-  "io.modelcontextprotocol/clientCapabilities": {},
-};
 const requests = [
   { jsonrpc: "2.0", id: 1, method: "tools/list", params: { _meta: meta } },
   {
@@ -137,6 +215,12 @@ const requests = [
       _meta: meta,
     },
   },
+  ...expectedDocumentPaths.map((path, index) => ({
+    jsonrpc: "2.0",
+    id: 100 + index,
+    method: "tools/call",
+    params: { name: "fetch_doc", arguments: { path }, _meta: meta },
+  })),
 ];
 
 try {
@@ -160,14 +244,22 @@ try {
   const parseToolResult = (id) =>
     JSON.parse(responses.get(id)?.result?.content?.[0]?.text ?? "null");
   const listed = parseToolResult(2);
-  assert.equal(listed.length, 22);
+  assert.equal(listed.length, expectedDocumentPaths.length);
+  assert.deepEqual(
+    listed.map(({ path }) => path),
+    expectedDocumentPaths,
+  );
+  assert.deepEqual(
+    listed.map(({ path }) => path),
+    v1Corpus.listed.map(({ path }) => path),
+  );
   assert.equal(
     listed.find(({ path }) => path === "getting-started.md")?.url,
-    `${baseUrl}getting-started`,
+    `${baseUrl}getting-started/`,
   );
   assert.equal(
     listed.find(({ path }) => path === "zh-cn/getting-started.md")?.url,
-    `${baseUrl}zh-cn/getting-started`,
+    `${baseUrl}zh-cn/getting-started/`,
   );
   assert.equal(parseToolResult(3)[0]?.path, "remote-sources.md");
   assert.match(parseToolResult(4)?.content ?? "", /four read-only tools/i);
@@ -187,6 +279,48 @@ try {
       "utf8",
     ),
   );
+  for (const [index, path] of expectedDocumentPaths.entries()) {
+    const response = responses.get(100 + index);
+    assert.notEqual(
+      response?.result?.isError,
+      true,
+      `MCP failed to fetch '${path}'`,
+    );
+    const fetched = parseToolResult(100 + index);
+    assert.equal(fetched.path, path);
+    assert.equal(typeof fetched.content, "string");
+    assert.ok(
+      fetched.content.length > 0,
+      `MCP returned empty content for '${path}'`,
+    );
+    assert.ok(Array.isArray(fetched.headings));
+    const v1Fetched = v1Corpus.documents.get(path);
+    assert.deepEqual(
+      {
+        path: v1Fetched?.path,
+        title: v1Fetched?.title,
+        content: v1Fetched?.content,
+        frontmatter: v1Fetched?.frontmatter,
+        headings: v1Fetched?.headings,
+        url: v1Fetched?.url,
+      },
+      {
+        path: fetched.path,
+        title: fetched.title,
+        content: fetched.content,
+        frontmatter: fetched.frontmatter,
+        headings: fetched.headings,
+        url: fetched.url,
+      },
+      `v1 and v2 MCP results differ for '${path}'`,
+    );
+    const expectedPage = new URL(routeMap.routes[path], baseUrl).href;
+    const actualPage = new URL(fetched.url);
+    const normalizedActualPage = actualPage.pathname.endsWith("/")
+      ? actualPage.href
+      : `${actualPage.href}/`;
+    assert.equal(normalizedActualPage, expectedPage);
+  }
   for (const document of listed) {
     const expectedPage = new URL(routeMap.routes[document.path], baseUrl).href;
     const actualPage = new URL(document.url);
@@ -200,7 +334,7 @@ try {
   }
 
   console.log(
-    `Verified the published corpus through all four MCP tools and ${listed.length} page URLs.`,
+    `Verified equivalent v1/v2 corpora through all four MCP tools, ${listed.length * 2} document fetches, and ${listed.length} page URLs.`,
   );
 } finally {
   lines.close();

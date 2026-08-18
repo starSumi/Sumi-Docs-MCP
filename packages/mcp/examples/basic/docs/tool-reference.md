@@ -1,5 +1,14 @@
 # MCP tool reference
 
+## Server instructions
+
+The MCP initialization result includes concise, self-contained instructions in
+its first 512 characters. They identify the server as read-only, route discovery
+to `list_docs`, lexical lookup to `search_docs`, exact retrieval to `fetch_doc`,
+and API retrieval to `get_openapi_spec`, and state that source changes require a
+process restart. Clients that do not load a repository Skill can use this native
+protocol guidance without changing the tool contract.
+
 Sumi-Docs-MCP exposes four read-only tools over the official stdio adapter. The
 implemented protocol target is MCP `2026-07-28`. A 2026 client may send
 `tools/list` as its first request with the required request metadata; the server
@@ -8,7 +17,9 @@ does not require a legacy initialize handshake.
 Every tool result contains one text content item. For successful calls, that
 text is JSON encoded and `_meta` contains `protocolVersion`, `capabilities`,
 and an ISO 8601 `timestamp`. Unknown argument fields and malformed values are
-rejected by strict schemas before a handler runs.
+rejected by strict schemas before content loading or handler execution. The
+server normalizes these failures to `INVALID_INPUT` without returning validator
+details.
 
 ## `list_docs`
 
@@ -85,11 +96,10 @@ characters accepted by the schema. The result is the OpenAPI object with
 
 A handled tool error sets `isError: true` and returns a sanitized text message.
 The server uses `PATH_NOT_FOUND`, `INVALID_INPUT`, and `PARSE_ERROR` as
-client-facing error categories. Handler errors include the category in
-`_meta.errorCode`; schema validation is performed by the official SDK before
-handler execution. Absolute paths and stack traces are never returned to the
-client. Operator diagnostics go to stderr because stdout is reserved for MCP
-JSON-RPC.
+client-facing error categories. Every handled or validation error includes the
+category in `_meta.errorCode`. Absolute paths, stack traces, raw input, and
+validator details are never returned to the client. Operator diagnostics go to
+stderr because stdout is reserved for MCP JSON-RPC.
 
 The server object is cheap to construct. The first content tool call loads one
 bounded local or remote corpus snapshot and optional OpenAPI document. That

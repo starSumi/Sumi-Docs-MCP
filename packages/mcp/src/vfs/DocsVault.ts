@@ -76,8 +76,6 @@ export class DocsVault {
     // Commit only after successful load
     this.rootPath = nextRootPath;
     this.nodes = nextNodes;
-
-    console.error(`Loaded ${this.nodes.size} documents from ${dirPath}`);
   }
 
   /** Load a bounded read-only corpus declared by a remote JSON manifest. */
@@ -95,6 +93,7 @@ export class DocsVault {
         frontmatter: parsed.frontmatter,
         lastModified: document.lastModified,
         sourceUrl: document.sourceUrl,
+        route: document.route,
       });
     }
     let nextOpenApiSpec: OpenAPISpec | null = null;
@@ -105,8 +104,6 @@ export class DocsVault {
     // Commit only after successful parse
     this.nodes = nextNodes;
     this.openApiSpec = nextOpenApiSpec;
-
-    console.error(`Loaded ${this.nodes.size} documents from remote manifest.`);
   }
 
   /**
@@ -183,17 +180,7 @@ export class DocsVault {
    * @param filePath - Absolute path to OpenAPI JSON file
    */
   async loadOpenApi(filePath: string): Promise<void> {
-    try {
-      this.openApiSpec = await parseOpenApi(filePath);
-      console.error(
-        `Loaded OpenAPI spec: ${this.openApiSpec.info.title} v${this.openApiSpec.info.version}`,
-      );
-    } catch (error) {
-      console.error(
-        `Failed to load OpenAPI spec: ${error instanceof Error ? error.message : String(error)}`,
-      );
-      throw error;
-    }
+    this.openApiSpec = await parseOpenApi(filePath);
   }
 
   /**
@@ -206,12 +193,14 @@ export class DocsVault {
     title: string;
     lastModified?: Date;
     sourceUrl?: string;
+    route?: string;
   }> {
     const list = Array.from(this.nodes.values()).map((node) => ({
       path: node.path,
       title: node.title,
       lastModified: node.lastModified,
       sourceUrl: node.sourceUrl,
+      route: node.route,
     }));
 
     return list.sort((a, b) => a.path.localeCompare(b.path));
@@ -270,6 +259,7 @@ export class DocsVault {
           snippet: extractSnippet(node.content, sanitized, 200),
           score,
           sourceUrl: node.sourceUrl,
+          route: node.route,
         });
       }
     }
@@ -289,6 +279,7 @@ export class DocsVault {
         headings: result.headings,
         snippet: result.snippet,
         sourceUrl: result.sourceUrl,
+        route: result.route,
       }));
   }
 

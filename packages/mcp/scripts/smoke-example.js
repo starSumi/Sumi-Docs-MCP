@@ -134,17 +134,17 @@ const listedDocuments = parseToolText(2);
 assert.equal(
   listedDocuments.find((document) => document.path === "api/authentication.mdx")
     ?.url,
-  "https://docs.example.com/product/api/authentication",
+  "https://docs.example.com/product/api/authentication/",
 );
 assert.equal(
   listedDocuments.find((document) => document.path === "getting-started.md")
     ?.url,
-  "https://docs.example.com/product/getting-started",
+  "https://docs.example.com/product/getting-started/",
 );
 assert.equal(parseToolText(3)[0].path, "api/authentication.mdx");
 assert.equal(
   parseToolText(3)[0].url,
-  "https://docs.example.com/product/api/authentication",
+  "https://docs.example.com/product/api/authentication/",
 );
 assert.match(
   parseToolText(4).content,
@@ -152,7 +152,7 @@ assert.match(
 );
 assert.equal(
   parseToolText(4).url,
-  "https://docs.example.com/product/getting-started",
+  "https://docs.example.com/product/getting-started/",
 );
 assert.deepEqual(Object.keys(parseToolText(5).paths), ["/health"]);
 

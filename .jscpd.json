@@ -1,0 +1,18 @@
+{
+  "minTokens": 60,
+  "minLines": 6,
+  "mode": "mild",
+  "format": ["typescript", "javascript"],
+  "pattern": "**/*.{ts,tsx,mts,cts,js,mjs,cjs}",
+  "ignore": [
+    "**/tests/**",
+    "**/dist/**",
+    "**/node_modules/**",
+    "**/.sea/**",
+    "**/artifacts/**"
+  ],
+  "reporters": ["console"],
+  "threshold": 5,
+  "noColors": true,
+  "noTips": true
+}

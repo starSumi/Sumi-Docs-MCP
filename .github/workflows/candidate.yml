@@ -1,0 +1,182 @@
+name: Acceptance candidate
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full commit SHA selected for human acceptance
+        required: true
+        type: string
+      site_url:
+        description: HTTPS origin used for generated canonical URLs
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acceptance-candidate-${{ github.workflow }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build immutable candidate
+    if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
+    runs-on: windows-2025
+    timeout-minutes: 35
+    steps:
+      - name: Require an exact selected commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_COMMIT: ${{ inputs.commit }}
+          DISPATCH_SHA: ${{ github.sha }}
+        shell: pwsh
+        run: |
+          if ($env:REQUESTED_COMMIT -notmatch '^[0-9a-fA-F]{40}$') {
+            throw 'commit must be a full 40-character SHA.'
+          }
+          if ($env:REQUESTED_COMMIT.ToLowerInvariant() -ne $env:DISPATCH_SHA) {
+            throw 'commit must equal the SHA selected as the workflow dispatch ref.'
+          }
+          $current = gh api "repos/$env:GITHUB_REPOSITORY/commits/main" --jq .sha
+          if ($current.ToLowerInvariant() -ne $env:REQUESTED_COMMIT.ToLowerInvariant()) {
+            throw 'commit must equal the latest main commit.'
+          }
+
+      - name: Check out candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+
+      - name: Activate the pinned package manager
+        run: corepack enable
+
+      - name: Install exact dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Verify candidate source
+        env:
+          SITE_URL: ${{ inputs.site_url }}
+        run: |
+          pnpm run verify
+          pnpm run verify:integration
+          pnpm run smoke:mcp
+          pnpm run pack:mcp
+
+      - name: Build Windows executable
+        run: pnpm run build:sea
+
+      - name: Smoke test Windows executable
+        run: pnpm --filter @sumi-os/docs-mcp example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
+
+      - name: Record performance gate
+        id: performance
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          pnpm run benchmark:cold-start -- --iterations 30 --executable artifacts/bin/sumi-docs-mcp.exe --output ../../artifacts/cold-start.json
+          exit $LASTEXITCODE
+
+      - name: Package candidate
+        env:
+          REQUESTED_COMMIT: ${{ inputs.commit }}
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force artifacts | Out-Null
+          Compress-Archive -Path packages/mcp/artifacts/bin/sumi-docs-mcp.exe -DestinationPath "artifacts/sumi-docs-mcp-$($env:REQUESTED_COMMIT.ToLowerInvariant()).zip"
+          Compress-Archive -Path apps/web/dist/* -DestinationPath "artifacts/sumi-docs-web-$($env:REQUESTED_COMMIT.ToLowerInvariant()).zip"
+          Get-ChildItem artifacts/*.zip | ForEach-Object {
+            $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant()
+            "$hash  $($_.Name)" | Set-Content -Encoding ascii "$($_.FullName).sha256"
+          }
+
+      - name: Confirm candidate is still current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_COMMIT: ${{ inputs.commit }}
+        shell: pwsh
+        run: |
+          $current = gh api "repos/$env:GITHUB_REPOSITORY/commits/main" --jq .sha
+          if ($current.ToLowerInvariant() -ne $env:REQUESTED_COMMIT.ToLowerInvariant()) {
+            throw 'main changed while the candidate was building.'
+          }
+
+      - name: Upload for human acceptance
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: acceptance-candidate-${{ inputs.commit }}
+          path: |
+            artifacts/cold-start.json
+            artifacts/sumi-docs-mcp-*.zip
+            artifacts/sumi-docs-mcp-*.zip.sha256
+            artifacts/sumi-docs-web-*.zip
+            artifacts/sumi-docs-web-*.zip.sha256
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 14
+
+      - name: Enforce performance gate
+        id: enforce-performance
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: |
+          if ('${{ steps.performance.outcome }}' -ne 'success') {
+            throw 'The blocking cold-start performance gate failed. Inspect the uploaded evidence.'
+          }
+
+  attest:
+    name: Attest protected candidate
+    needs: build
+    if: ${{ github.ref == 'refs/heads/main' && vars.ENABLE_PRIVATE_ATTESTATION == 'true' }}
+    runs-on: windows-2025
+    timeout-minutes: 10
+    environment: candidate-attestation
+    permissions:
+      actions: read
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - name: Revalidate the selected main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED_COMMIT: ${{ inputs.commit }}
+          DISPATCH_SHA: ${{ github.sha }}
+        shell: pwsh
+        run: |
+          $current = gh api "repos/$env:GITHUB_REPOSITORY/commits/main" --jq .sha
+          if ($env:REQUESTED_COMMIT.ToLowerInvariant() -ne $env:DISPATCH_SHA -or
+              $current.ToLowerInvariant() -ne $env:REQUESTED_COMMIT.ToLowerInvariant()) {
+            throw 'candidate is no longer the selected latest main commit.'
+          }
+
+      - name: Download exact candidate artifact
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: acceptance-candidate-${{ inputs.commit }}
+          path: candidate-artifact
+
+      - name: Verify candidate checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem candidate-artifact/*.sha256 | ForEach-Object {
+            $fields = (Get-Content -Raw $_.FullName).Trim() -split '\s+', 2
+            if ($fields.Count -ne 2) { throw "Invalid checksum file: $($_.Name)" }
+            $subject = Join-Path $_.DirectoryName $fields[1]
+            $actual = (Get-FileHash -Algorithm SHA256 $subject).Hash.ToLowerInvariant()
+            if ($actual -ne $fields[0].ToLowerInvariant()) {
+              throw "Checksum mismatch: $($fields[1])"
+            }
+          }
+
+      - name: Attest candidate provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: candidate-artifact/*.zip

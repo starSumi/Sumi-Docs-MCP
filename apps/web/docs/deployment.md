@@ -14,19 +14,21 @@ candidates but does not select or configure a hosting provider.
 
 ## Build a candidate
 
-Run the manual `Site candidate` workflow from the exact commit under test. Enter
-the full 40-character commit SHA and the public HTTPS origin. The workflow
-rejects a SHA that differs from its dispatch ref, installs the committed
-lockfile, validates `SITE_URL`, runs the full release suite, and packages `dist/`
-as a tar archive retained for 14 days.
+Run the root manual `Acceptance candidate` workflow from the exact latest
+`main` commit under test. Enter the full 40-character commit SHA and the public
+HTTPS origin. The workflow rejects a SHA that differs from its dispatch ref or
+current `main`, installs the committed lockfile, validates `SITE_URL`, runs the
+full product suite, and packages the Web and MCP outputs for 14 days.
 
 The workflow emits:
 
-- `sumi-docs-web-<commit>.tar.gz`;
-- a SHA-256 checksum for that archive; and
-- GitHub artifact provenance for both files.
+- `sumi-docs-web-<commit>.zip` and `sumi-docs-mcp-<commit>.zip`;
+- SHA-256 checksums and raw cold-start evidence; and
+- protected GitHub provenance only when the private repository plan and the
+  root `candidate-attestation` environment support it.
 
-It does not deploy or modify repository contents.
+It does not deploy or modify repository contents. A skipped attestation remains
+an open release gate.
 
 ## Human acceptance
 
@@ -39,7 +41,9 @@ local static server. Check at minimum:
 - canonical URLs and the sitemap use the intended public origin;
 - every route in `_mcp/sumi-docs-routes.json` resolves;
 - `_mcp/sumi-docs-manifest.json`, raw documents, and OpenAPI JSON are public;
-- Sumi-Docs-MCP passes `npm run verify:mcp` against the candidate.
+- `_mcp/v2/current.json` verifies the referenced immutable manifest bytes and
+  every document digest under its snapshot;
+- Sumi-Docs-MCP passes `pnpm run verify:mcp` against the candidate.
 
 Record the accepted commit SHA, workflow run ID, origin, checksum, tester, and
 acceptance time. Do not promote a locally rebuilt directory in place of the
@@ -52,7 +56,9 @@ same commit, lockfile, Node version, and `SITE_URL` when direct artifact
 promotion is unavailable. Verify the deployed URLs before changing DNS or
 announcing availability.
 
-Keep the previously accepted archive and its deployment identifier. Roll back
+Keep the previously accepted archive and its deployment identifier. Do not
+mutate a deployed snapshot directory or promote a build whose source-drift gate
+failed. Roll back
 by restoring that immutable artifact or deployment, then verify the root,
 localized routes, and machine projection. Content-contract changes that break
 the current MCP manifest require their own ADR and coordinated rollback plan.

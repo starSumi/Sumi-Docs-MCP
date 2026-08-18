@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "revision": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "defaultLocale": "EN",
+  "locales": ["EN"],
+  "documents": [
+    {
+      "id": "getting-started",
+      "locale": "EN",
+      "path": "getting-started.md",
+      "route": "/getting-started/",
+      "mediaType": "text/markdown",
+      "bytes": 8,
+      "sha256": "12442db336c4ffa46525044d6e8ad4addd85359bea060b780b62470d458375df",
+      "nav": { "sectionId": "start-here", "sectionOrder": 10, "order": 20 }
+    }
+  ],
+  "provenance": { "repository": null, "commit": null, "dirty": false }
+}

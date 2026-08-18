@@ -3,6 +3,12 @@ import assert from "node:assert/strict";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { InMemoryTransport } from "@modelcontextprotocol/server";
+import {
+  canonicalJson,
+  createCurrentLocatorV2,
+  describeIntegrity,
+  sealManifestV2,
+} from "@sumi-os/corpus-contract";
 import { DocsMcpServer } from "../../src/mcp/server.js";
 import { DocsVault } from "../../src/vfs/DocsVault.js";
 
@@ -195,6 +201,85 @@ test("DocsVault loads a complete remote corpus from a manifest", async () => {
   }
 });
 
+test("DocsVault verifies and loads an immutable v2 corpus snapshot", async () => {
+  const guide = "# Remote Guide\n\nInstall from the verified v2 corpus.";
+  const reference = "# Remote API Reference\n\nUse the health endpoint.";
+  const v2Manifest = sealManifestV2({
+    version: 2,
+    defaultLocale: "en",
+    locales: ["en"],
+    documents: [
+      {
+        id: "guide",
+        locale: "en",
+        path: "guide.md",
+        route: "/guide/",
+        mediaType: "text/markdown",
+        ...describeIntegrity(guide),
+        nav: { sectionId: "start", sectionOrder: 10, order: 10 },
+      },
+      {
+        id: "api-reference",
+        locale: "en",
+        path: "api/reference.mdx",
+        route: "/api/reference/",
+        mediaType: "text/mdx",
+        ...describeIntegrity(reference),
+        nav: { sectionId: "reference", sectionOrder: 20, order: 10 },
+      },
+    ],
+    openapi: { path: "openapi.json", ...describeIntegrity(openApi) },
+    provenance: { repository: null, commit: null, dirty: true },
+  });
+  const manifestBytes = canonicalJson(v2Manifest);
+  const locator = createCurrentLocatorV2(v2Manifest);
+  let servedGuide = guide;
+  const server = createServer((request, response) => {
+    const snapshotPrefix = `/docs/_mcp/v2/${locator.manifest.replace(/manifest\.json$/, "")}`;
+    const routes: Record<string, string> = {
+      "/docs/_mcp/v2/current.json": JSON.stringify(locator),
+      [`/docs/_mcp/v2/${locator.manifest}`]: manifestBytes,
+      [`${snapshotPrefix}docs/guide.md`]: servedGuide,
+      [`${snapshotPrefix}docs/api/reference.mdx`]: reference,
+      [`${snapshotPrefix}docs/openapi.json`]: openApi,
+    };
+    const body = routes[request.url ?? ""];
+    if (body === undefined) {
+      response.writeHead(404).end();
+      return;
+    }
+    response.writeHead(200, { "content-type": "application/octet-stream" });
+    response.end(body);
+  });
+  await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const { port } = server.address() as AddressInfo;
+  const locatorUrl = `http://127.0.0.1:${port}/docs/_mcp/v2/current.json`;
+
+  try {
+    const vault = new DocsVault();
+    await vault.loadFromRemoteManifest(locatorUrl);
+    assert.deepEqual(
+      vault.listTree().map(({ path }) => path),
+      ["api/reference.mdx", "guide.md"],
+    );
+    assert.match(vault.getDoc("guide.md")?.content ?? "", /verified v2/);
+    assert.equal(vault.getDoc("guide.md")?.route, "/guide/");
+    assert.equal(vault.getOpenApiSpec()?.info.title, "Remote API");
+    assert.match(
+      vault.getDoc("guide.md")?.sourceUrl ?? "",
+      /\/snapshots\/[a-f0-9]{64}\/docs\/guide\.md$/,
+    );
+
+    servedGuide = `${guide}\ncorrupted`;
+    await assert.rejects(
+      new DocsVault().loadFromRemoteManifest(locatorUrl),
+      /byte count mismatch|SHA-256 mismatch/i,
+    );
+  } finally {
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
 test("remote manifests reject non-relative paths and redirects", async () => {
   let invalidDocument = "../secret.md";
   const server = createServer((request, response) => {
@@ -214,14 +299,14 @@ test("remote manifests reject non-relative paths and redirects", async () => {
       new DocsVault().loadFromRemoteManifest(
         `http://127.0.0.1:${port}/bad.json`,
       ),
-      /relative Markdown/i,
+      /restricted portable relative path/i,
     );
     invalidDocument = "/escape.md";
     await assert.rejects(
       new DocsVault().loadFromRemoteManifest(
         `http://127.0.0.1:${port}/bad.json`,
       ),
-      /relative Markdown/i,
+      /restricted portable relative path/i,
     );
     await assert.rejects(
       new DocsVault().loadFromRemoteManifest(

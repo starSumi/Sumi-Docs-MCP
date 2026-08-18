@@ -8,16 +8,16 @@
 - Or a remote HTTPS host with a Sumi documentation manifest
 - Optionally, an OpenAPI 3.x JSON document
 
-Use `npm ci` for a reproducible checkout installation:
+Use `pnpm install --frozen-lockfile` for a reproducible checkout installation:
 
 ```powershell
-npm ci
+pnpm install --frozen-lockfile
 ```
 
 ## Verify the checkout
 
 ```powershell
-npm run example:smoke
+pnpm run example:smoke
 ```
 
 This command compiles the project and runs a stdio round trip against
@@ -29,12 +29,26 @@ Example stdio smoke test passed (5 MCP requests).
 
 ## Serve your documentation
 
-Build once, then point the CLI at absolute paths:
+Build once, then point the CLI at a corpus. Relative paths are resolved from the
+current working directory:
 
 ```powershell
-npm run build
-node dist/index.js serve C:\docs\product --openapi C:\docs\product\openapi.json --base-url https://docs.example.com/product/
+pnpm run build
+node dist/index.js serve ./product-docs --openapi ./product-docs/openapi.json --base-url https://docs.example.com/product/
 ```
+
+From a Git worktree with a `docs/` directory, diagnose and start it without a
+positional path:
+
+```powershell
+node dist/index.js doctor --json
+node dist/index.js serve
+```
+
+Use a tracked `sumi-docs.config.json` when the source is not `docs/`. Discovery
+stops at the nearest Git worktree root. In a directory without Git, it checks
+only the current directory, so a parent workspace named `.sumi` cannot be
+selected accidentally.
 
 Omit `--openapi` when the corpus has no API specification. Add `--verbose` for
 shutdown diagnostics. All protocol output is written to stdout, so do not pipe
@@ -66,9 +80,10 @@ arguments:
   https://docs.example.com/product/
 ```
 
-Use absolute paths because GUI clients often start servers with an application
-directory as their working directory. The JSON template under `examples/clients/`
-is only a launcher template; configuration locations and accepted schemas remain
+Use an absolute source or `--config` path unless the client explicitly starts
+the server in the project working directory. GUI clients often use an
+application directory instead. The JSON template under `examples/clients/` is
+only a launcher template; configuration locations and accepted schemas remain
 client-specific.
 
 In Codex, ask it to search the configured documentation after starting a new
@@ -81,7 +96,7 @@ When the public documentation site is not available, run this in a separate
 terminal:
 
 ```powershell
-npm run preview:docs -- --docs C:\docs\product --port 4173
+pnpm run preview:docs -- --docs ./product-docs --port 4173
 ```
 
 Use `http://127.0.0.1:4173/` for `--base-url` in the MCP client configuration.
@@ -94,9 +109,9 @@ The same preview can also exercise remote source mode by using
 Node.js 25.5 or newer is required to build the SEA executable:
 
 ```powershell
-npm run build:sea
+pnpm run build:sea
 .\artifacts\bin\sumi-docs-mcp.exe --version
-.\artifacts\bin\sumi-docs-mcp.exe serve C:\docs\product
+.\artifacts\bin\sumi-docs-mcp.exe serve ./product-docs
 ```
 
 The resulting executable does not require an external Node.js installation or

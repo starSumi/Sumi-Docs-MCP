@@ -14,8 +14,8 @@ checkout locally or build the documented executable artifact.
 Prerequisite: Node.js 25.5.0 or newer.
 
 ```powershell
-npm ci
-npm run example:smoke
+pnpm install --frozen-lockfile
+pnpm run example:smoke
 ```
 
 The smoke test builds the server, starts a real stdio child process, and verifies
@@ -24,9 +24,32 @@ all four tools against the checked-in corpus in `examples/basic/`.
 Start the same corpus for an MCP client:
 
 ```powershell
-npm run build
+pnpm run build
 node dist/index.js serve examples/basic/docs --openapi examples/basic/openapi.json --base-url https://docs.example.com/product/
 ```
+
+In a Git worktree with a `docs/` directory, the source is optional. Check the
+resolved project and fully load the corpus before connecting a client:
+
+```powershell
+node dist/index.js doctor --json
+node dist/index.js serve
+```
+
+Repositories with another documentation root use a tracked
+`sumi-docs.config.json`:
+
+```json
+{
+  "version": 1,
+  "source": "handbook",
+  "openapi": "openapi.json",
+  "baseUrl": "https://docs.example.com/product/"
+}
+```
+
+The config is strict JSON. Unknown fields and paths escaping the project root
+are rejected. Use `--config <path>` to select a different file explicitly.
 
 The process uses stdout for JSON-RPC. Diagnostics go to stderr. It is normal for
 the process to wait silently until a client sends a request.
@@ -60,34 +83,39 @@ If the public site is not deployed yet, start the loopback-only preview in a
 separate terminal:
 
 ```powershell
-npm run preview:docs
+pnpm run preview:docs
 ```
 
 Then use `http://127.0.0.1:4173/` as `--base-url`. The preview serves the
 checked-in example by default. To preview another corpus:
 
 ```powershell
-npm run preview:docs -- --docs C:\absolute\path\to\docs --port 4173
+pnpm run preview:docs -- --docs ./product-docs --port 4173
 ```
 
 ## Commands
 
-| Purpose                         | Command                                         | Result                               |
-| ------------------------------- | ----------------------------------------------- | ------------------------------------ |
-| Run the example from TypeScript | `npm run dev`                                   | stdio server using `examples/basic/` |
-| Restart on source changes       | `npm run dev:watch`                             | development-only stdio server        |
-| Preview clickable local URLs    | `npm run preview:docs`                          | loopback-only Markdown preview       |
-| Validate the example end to end | `npm run example:smoke`                         | build plus five MCP requests         |
-| Build the Node.js distribution  | `npm run build`                                 | `dist/`                              |
-| Run the built example           | `npm start`                                     | stdio server from `dist/`            |
-| Build a standalone executable   | `npm run build:sea`                             | `artifacts/bin/sumi-docs-mcp.exe`    |
-| Run quality checks              | `npm run lint`, `npm run typecheck`, `npm test` | static checks and tests              |
+| Purpose                         | Command                                            | Result                               |
+| ------------------------------- | -------------------------------------------------- | ------------------------------------ |
+| Run the example from TypeScript | `pnpm run dev`                                     | stdio server using `examples/basic/` |
+| Restart on source changes       | `pnpm run dev:watch`                               | development-only stdio server        |
+| Preview clickable local URLs    | `pnpm run preview:docs`                            | loopback-only Markdown preview       |
+| Validate the example end to end | `pnpm run example:smoke`                           | build plus five MCP requests         |
+| Build the Node.js distribution  | `pnpm run build`                                   | `dist/`                              |
+| Run the built example           | `pnpm start`                                       | stdio server from `dist/`            |
+| Build a standalone executable   | `pnpm run build:sea`                               | `artifacts/bin/sumi-docs-mcp.exe`    |
+| Run quality checks              | `pnpm run lint`, `pnpm run typecheck`, `pnpm test` | static checks and tests              |
+| Diagnose a project corpus       | `node dist/index.js doctor --json`                 | read-only resolution and load report |
 
 To serve another corpus, invoke the CLI directly:
 
 ```powershell
-node dist/index.js serve C:\absolute\path\to\docs --openapi C:\absolute\path\to\openapi.json --base-url https://docs.example.com/
+node dist/index.js serve ./product-docs --openapi ./product-docs/openapi.json --base-url https://docs.example.com/
 ```
+
+Relative paths are resolved from the process working directory. Absolute paths
+are accepted when a host cannot set a stable working directory, but they are not
+required and should not be copied into shared diagnostics.
 
 To serve a remote corpus, point the same command at its manifest or containing
 directory:
@@ -122,12 +150,21 @@ corpus snapshot on the first tool call. Source changes require a process restart
 Runtime configuration comes from CLI arguments, not `.env` files:
 
 ```text
-sumi-docs-mcp serve <docs-source> [--openapi <path>] [--base-url <url>] [--transport stdio] [--verbose]
+sumi-docs-mcp serve [docs-source] [--config <path>] [--openapi <path>] [--base-url <url>] [--transport stdio] [--verbose]
+sumi-docs-mcp doctor [docs-source] [--config <path>] [--json] [--show-paths]
 ```
 
-`<docs-source>` is either a local directory or a remote HTTPS manifest/base URL.
+`[docs-source]` is either a local directory or a remote HTTPS manifest/base URL.
+When omitted, the server uses the nearest config inside the current Git
+worktree, then `<worktree-root>/docs`. Without a Git boundary, it inspects only
+the current directory and defaults to `<cwd>/docs`; it never climbs into a
+parent `.sumi` workspace container.
 `--base-url` controls clickable human-facing page URLs; it is not the remote
 content source.
+
+Doctor reports project-relative paths or explicit external placeholders by
+default. `--show-paths` is an opt-in for local diagnosis and is rejected by
+`serve`; credentials and stack traces stay redacted in both modes.
 
 The benchmark has its own command options; see
 [`docs/development.md`](docs/development.md). There are no required application

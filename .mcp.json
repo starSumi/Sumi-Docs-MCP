@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "sumi-docs": {
+      "command": "node",
+      "args": ["${CLAUDE_PROJECT_DIR}/packages/mcp/dist/index.js", "serve"]
+    }
+  }
+}

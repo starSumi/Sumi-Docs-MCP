@@ -11,7 +11,7 @@ disabled or bypassed.
 Install development dependencies from a Git checkout:
 
 ```powershell
-npm ci
+pnpm install --frozen-lockfile
 ```
 
 The `prepare` script installs Husky only when `.git` exists. It exits successfully
@@ -79,28 +79,28 @@ look cleaner.
 Validate a message without creating a commit:
 
 ```powershell
-npm run commitlint -- --edit path\to\commit-message.txt
+pnpm run commitlint -- --edit path\to\commit-message.txt
 node scripts/git-hooks/reject-agent-attribution.mjs path\to\commit-message.txt
 ```
 
 Run the repository-owned gate regression tests without Git metadata:
 
 ```powershell
-npm run test:git-hooks
+pnpm run test:git-hooks
 ```
 
 ## Local gates
 
 | Hook         | Gate                                                 | Boundary                                                        |
 | ------------ | ---------------------------------------------------- | --------------------------------------------------------------- |
-| `pre-commit` | Git identity plus lint-staged ESLint/Prettier checks | Checks pending identity and staged paths; does not format files |
+| `pre-commit` | Git identity plus lint-staged Oxlint/Prettier checks | Checks pending identity and staged paths; does not format files |
 | `commit-msg` | commitlint and automated-attribution check           | Validates the proposed message only                             |
 | `pre-push`   | lint, typecheck, and tests                           | Omits SEA builds and cold-start benchmarks                      |
 
 `lint-staged --fail-on-changes` converts any unexpected task mutation into a
 failure. Partially staged files may be temporarily isolated by lint-staged and are
 restored before it exits; the configured tasks themselves are read-only. Run
-`npm run format` deliberately, review the diff, and stage the result separately.
+`pnpm run format` deliberately, review the diff, and stage the result separately.
 
 Do not make `--no-verify` a routine workflow. An emergency bypass requires the
 same checks to be run manually and the reason recorded in the review. Server-side
@@ -179,13 +179,13 @@ whether rewritten commits or tags must be re-signed.
 ```powershell
 git log --format=fuller --decorate --graph
 git range-diff <base>...$backupBranch <base>...HEAD
-npm ci
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm run example:smoke
-npm pack --dry-run
+pnpm install --frozen-lockfile
+pnpm run lint
+pnpm run typecheck
+pnpm test
+pnpm run build
+pnpm run example:smoke
+pnpm pack --dry-run
 ```
 
 Use the project-required Node version. Run SEA build, executable smoke test, and

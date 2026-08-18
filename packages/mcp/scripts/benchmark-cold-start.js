@@ -1,12 +1,13 @@
 import { spawn } from "node:child_process";
+import { mkdirSync, writeFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { performance } from "node:perf_hooks";
-import { resolve } from "node:path";
 import minimist from "minimist";
 import { toPortableReportPath } from "./report-path.mjs";
 
 const options = minimist(process.argv.slice(2), {
-  string: ["docs", "executable", "iterations"],
+  string: ["docs", "executable", "iterations", "output"],
   default: { docs: "examples/basic/docs", iterations: "5" },
 });
 const docsRoot = resolve(options.docs);
@@ -131,5 +132,14 @@ const summary = {
   passed: Math.max(...times) < hardLimitMs,
 };
 
-console.log(JSON.stringify(summary, null, 2));
+const serializedSummary = `${JSON.stringify(summary, null, 2)}\n`;
+if (options.output) {
+  const outputPath = resolve(options.output);
+  mkdirSync(dirname(outputPath), { recursive: true });
+  writeFileSync(outputPath, serializedSummary, {
+    encoding: "utf8",
+    mode: 0o600,
+  });
+}
+process.stdout.write(serializedSummary);
 if (!summary.passed) process.exitCode = 1;

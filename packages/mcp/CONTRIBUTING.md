@@ -44,7 +44,7 @@ repository hooks and GitHub workflows.
 ## Git quality gates
 
 Use Conventional Commits and keep each commit focused on one reviewable concern.
-The repository installs Husky hooks from `npm ci` when a real `.git` worktree is
+The repository installs Husky hooks from `pnpm install --frozen-lockfile` when a real `.git` worktree is
 present:
 
 - `pre-commit` validates accountable Git identity and performs read-only lint

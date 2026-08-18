@@ -1,0 +1,29 @@
+{
+  "version": 2,
+  "revision": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+  "defaultLocale": "en",
+  "locales": ["en", "zh-CN"],
+  "documents": [
+    {
+      "id": "getting-started",
+      "locale": "en",
+      "path": "getting-started.md",
+      "route": "/getting-started/",
+      "mediaType": "text/markdown",
+      "bytes": 8,
+      "sha256": "12442db336c4ffa46525044d6e8ad4addd85359bea060b780b62470d458375df",
+      "nav": { "sectionId": "start-here", "sectionOrder": 10, "order": 20 }
+    },
+    {
+      "id": "getting-started",
+      "locale": "zh-CN",
+      "path": "zh-cn/getting-started.md",
+      "route": "/getting-started/",
+      "mediaType": "text/markdown",
+      "bytes": 9,
+      "sha256": "25d7560f76ff09dd3e1e5a3db161a8afee29a374c6e202d14b95b69b300c100a",
+      "nav": { "sectionId": "start-here", "sectionOrder": 10, "order": 20 }
+    }
+  ],
+  "provenance": { "repository": null, "commit": null, "dirty": false }
+}

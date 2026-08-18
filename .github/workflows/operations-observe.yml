@@ -1,0 +1,87 @@
+name: Operations observation
+
+on:
+  schedule:
+    - cron: "17 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: operations-observe-main
+  cancel-in-progress: true
+
+jobs:
+  observe:
+    name: Observe current main
+    if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Require the latest main commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
+          test "$current" = "$GITHUB_SHA"
+
+      - name: Check out observed source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .node-version
+
+      - name: Activate the pinned package manager
+        run: corepack enable
+
+      - name: Install exact dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Observe product health
+        shell: bash
+        run: |
+          mkdir -p artifacts/operations
+          verify_status=0
+          integration_status=0
+          pnpm run verify || verify_status=$?
+          pnpm run verify:integration || integration_status=$?
+          if [[ $verify_status -eq 0 && $integration_status -eq 0 ]]; then
+            result=passed
+          else
+            result=failed
+          fi
+          RESULT="$result" VERIFY_STATUS="$verify_status" INTEGRATION_STATUS="$integration_status" \
+            node -e 'const fs=require("node:fs"); const payload={schemaVersion:1,repository:process.env.GITHUB_REPOSITORY,commit:process.env.GITHUB_SHA,runId:process.env.GITHUB_RUN_ID,observedAt:new Date().toISOString(),result:process.env.RESULT,gates:{verify:Number(process.env.VERIFY_STATUS),integration:Number(process.env.INTEGRATION_STATUS)}}; fs.writeFileSync("artifacts/operations/observation.json",JSON.stringify(payload,null,2)+"\n",{mode:0o600})'
+          cat artifacts/operations/observation.json >> "$GITHUB_STEP_SUMMARY"
+          [[ $verify_status -eq 0 && $integration_status -eq 0 ]]
+
+      - name: Confirm observation is still current
+        id: freshness
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          current="$(gh api "repos/$GITHUB_REPOSITORY/commits/main" --jq .sha)"
+          if [[ "$current" = "$GITHUB_SHA" ]]; then
+            echo 'current=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'current=false' >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Upload immutable observation
+        if: ${{ !cancelled() && steps.freshness.outputs.current == 'true' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: operations-observation-${{ github.sha }}
+          path: artifacts/operations/observation.json
+          if-no-files-found: error
+          retention-days: 30

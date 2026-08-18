@@ -1,23 +1,31 @@
-import { copyFile, mkdir, writeFile } from "node:fs/promises";
+import {
+  canonicalJson,
+  createCurrentLocatorV2,
+  describeIntegrity,
+  parseCurrentLocatorV2,
+  parseLocatedManifestV2,
+  parseManifestV1,
+  revisionDirectory,
+  sealManifestV2,
+  sha256Hex,
+} from "@sumi-os/corpus-contract";
+import { execFile as execFileCallback } from "node:child_process";
+import { randomUUID } from "node:crypto";
+import {
+  readFile,
+  mkdir,
+  readdir,
+  rename,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { dirname, extname, posix, resolve, sep } from "node:path";
+import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
+import { catalogPublisherDocuments } from "../src/content-catalog.ts";
 
-const DOCUMENT_PATH = /^[a-zA-Z0-9_/-]+\.mdx?$/;
 const OPENAPI_PATH = /^[a-zA-Z0-9_/-]+\.json$/;
-
-function assertRelativePath(value, pattern, label) {
-  if (
-    typeof value !== "string" ||
-    value.length === 0 ||
-    value.length > 1024 ||
-    !pattern.test(value) ||
-    value.startsWith("/") ||
-    value.includes("//") ||
-    value.split("/").includes("..")
-  ) {
-    throw new Error(`${label} must be a restricted relative path.`);
-  }
-}
+const execFile = promisify(execFileCallback);
 
 function assertContained(root, candidate) {
   const normalizedRoot = root.endsWith(sep) ? root : `${root}${sep}`;
@@ -26,56 +34,470 @@ function assertContained(root, candidate) {
   }
 }
 
+function assertOpenApiPath(value) {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.length > 1024 ||
+    !OPENAPI_PATH.test(value) ||
+    value.startsWith("/") ||
+    value.includes("//") ||
+    value.split("/").includes("..")
+  ) {
+    throw new Error("OpenAPI source must be a restricted relative path.");
+  }
+}
+
 export function normalizePublisherOptions(options = {}) {
-  if (!Array.isArray(options.documents) || options.documents.length === 0) {
-    throw new Error("Publisher requires at least one document mapping.");
+  if (!options.catalog) {
+    throw new Error("Publisher requires a reviewed content catalog.");
   }
-  if (options.documents.length > 1000) {
-    throw new Error("Publisher supports at most 1000 documents.");
+  if (
+    Object.keys(options).some(
+      (key) =>
+        !["catalog", "contentRoot", "openapi", "provenance"].includes(key),
+    )
+  ) {
+    throw new Error("Publisher options contain an unknown field.");
   }
+  const documents = catalogPublisherDocuments(options.catalog);
+  if (documents.length === 0 || documents.length > 1000) {
+    throw new Error("Publisher requires between 1 and 1000 catalog variants.");
+  }
+  if (options.openapi !== undefined) assertOpenApiPath(options.openapi);
+  if (
+    options.contentRoot !== undefined &&
+    (typeof options.contentRoot !== "string" ||
+      options.contentRoot.length === 0)
+  ) {
+    throw new Error("Publisher contentRoot must be a non-empty path string.");
+  }
+  return {
+    catalog: options.catalog,
+    documents,
+    ...(options.contentRoot && { contentRoot: options.contentRoot }),
+    ...(options.openapi && { openapi: options.openapi }),
+    ...(options.provenance && { provenance: options.provenance }),
+  };
+}
 
-  const seenSources = new Set();
-  const seenPages = new Set();
-  const documents = options.documents.map((document) => {
-    if (!document || typeof document !== "object" || Array.isArray(document)) {
-      throw new Error("Every document mapping must be an object.");
+function sourcePath(root, path) {
+  const candidate = resolve(root, ...path.split("/"));
+  assertContained(root, candidate);
+  return candidate;
+}
+
+async function discoverMarkdown(root, relative = "") {
+  const directory = relative ? sourcePath(root, relative) : root;
+  const entries = await readdir(directory, { withFileTypes: true });
+  const documents = [];
+  for (const entry of entries.sort((left, right) =>
+    left.name.localeCompare(right.name, "en"),
+  )) {
+    const path = relative ? `${relative}/${entry.name}` : entry.name;
+    if (entry.isSymbolicLink()) {
+      throw new Error(
+        `Reviewed content must not contain a symlink: '${path}'.`,
+      );
     }
-    if (
-      Object.keys(document).some((key) => !["source", "page"].includes(key))
+    if (entry.isDirectory()) {
+      documents.push(...(await discoverMarkdown(root, path)));
+    } else if (
+      entry.isFile() &&
+      [".md", ".mdx"].includes(extname(entry.name).toLowerCase())
     ) {
-      throw new Error("Document mapping contains an unknown field.");
+      documents.push(path);
     }
-    assertRelativePath(document.source, DOCUMENT_PATH, "Document source");
-    if (
-      typeof document.page !== "string" ||
-      !document.page.startsWith("/") ||
-      document.page.includes("..") ||
-      document.page.includes("?") ||
-      document.page.includes("#")
-    ) {
-      throw new Error("Document page must be an absolute site path.");
-    }
-    const page = document.page.endsWith("/")
-      ? document.page
-      : `${document.page}/`;
-    if (seenSources.has(document.source) || seenPages.has(page)) {
-      throw new Error("Document source paths and page routes must be unique.");
-    }
-    seenSources.add(document.source);
-    seenPages.add(page);
-    return { source: document.source, page };
+  }
+  return documents;
+}
+
+export async function capturePublicationInputs({
+  contentRoot,
+  publicDir,
+  options,
+}) {
+  const byPath = (left, right) => left.localeCompare(right, "en");
+  const discovered = (await discoverMarkdown(contentRoot)).sort(byPath);
+  const reviewed = options.documents.map(({ source }) => source).sort(byPath);
+  if (
+    discovered.length !== reviewed.length ||
+    discovered.some((path, index) => path !== reviewed[index])
+  ) {
+    const omitted = discovered.filter((path) => !reviewed.includes(path));
+    const missing = reviewed.filter((path) => !discovered.includes(path));
+    throw new Error(
+      `Reviewed catalog does not match content sources. Omitted: ${omitted.join(", ") || "none"}; missing: ${missing.join(", ") || "none"}.`,
+    );
+  }
+  const documents = await Promise.all(
+    options.documents.map(async (document) => ({
+      ...document,
+      bytes: await readFile(sourcePath(contentRoot, document.source)),
+    })),
+  );
+  const openapi = options.openapi
+    ? {
+        path: options.openapi,
+        bytes: await readFile(sourcePath(publicDir, options.openapi)),
+      }
+    : undefined;
+  return { documents, ...(openapi && { openapi }) };
+}
+
+export async function assertPublicationInputsUnchanged({
+  contentRoot,
+  publicDir,
+  options,
+  captured,
+}) {
+  const current = await capturePublicationInputs({
+    contentRoot,
+    publicDir,
+    options,
   });
-
-  if (options.openapi !== undefined) {
-    assertRelativePath(options.openapi, OPENAPI_PATH, "OpenAPI source");
+  for (let index = 0; index < captured.documents.length; index += 1) {
+    const before = captured.documents[index];
+    const after = current.documents[index];
+    if (before.source !== after.source || !before.bytes.equals(after.bytes)) {
+      throw new Error(
+        `Source drift detected during build for '${before.source}'.`,
+      );
+    }
   }
-  return { documents, ...(options.openapi && { openapi: options.openapi }) };
+  if (
+    captured.openapi?.path !== current.openapi?.path ||
+    (captured.openapi && !captured.openapi.bytes.equals(current.openapi.bytes))
+  ) {
+    throw new Error("Source drift detected during build for OpenAPI input.");
+  }
+}
+
+function normalizeRepositoryUrl(value) {
+  if (!value) return null;
+  const trimmed = value.trim().replace(/\.git$/, "");
+  const scp = /^git@github\.com:([^/]+\/[^/]+)$/.exec(trimmed);
+  if (scp) return `https://github.com/${scp[1]}`;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol === "https:" && !url.username && !url.password) {
+      return url.href.replace(/\/$/, "");
+    }
+    if (url.protocol === "ssh:" && url.hostname === "github.com") {
+      return `https://github.com${url.pathname}`.replace(/\/$/, "");
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+async function git(projectRoot, args) {
+  try {
+    const { stdout } = await execFile("git", ["-C", projectRoot, ...args], {
+      encoding: "utf8",
+      windowsHide: true,
+    });
+    return stdout.trim();
+  } catch {
+    return null;
+  }
+}
+
+export async function resolveProvenance(projectRoot, explicit) {
+  if (explicit) return explicit;
+  const [remote, head, status] = await Promise.all([
+    git(projectRoot, ["remote", "get-url", "origin"]),
+    git(projectRoot, ["rev-parse", "HEAD"]),
+    git(projectRoot, ["status", "--porcelain=v1", "--untracked-files=normal"]),
+  ]);
+  const repository = normalizeRepositoryUrl(remote);
+  const commit = repository && /^[a-f0-9]{40}$/.test(head ?? "") ? head : null;
+  return {
+    repository,
+    commit,
+    dirty: status === null || status.length > 0,
+  };
+}
+
+export function createPublication({ options, captured, provenance }) {
+  const v1 = parseManifestV1({
+    version: 1,
+    documents: options.documents.map(({ source }) => source),
+    ...(captured.openapi && { openapi: captured.openapi.path }),
+  });
+  const routes = Object.fromEntries(
+    options.documents.map(({ source, page }) => [source, page]),
+  );
+  const core = {
+    version: 2,
+    defaultLocale: options.catalog.defaultLocale,
+    locales: options.catalog.locales,
+    documents: captured.documents.map((document) => {
+      const integrity = describeIntegrity(document.bytes);
+      return {
+        id: document.id,
+        locale: document.locale,
+        path: document.source,
+        route: document.page,
+        mediaType:
+          extname(document.source).toLowerCase() === ".mdx"
+            ? "text/mdx"
+            : "text/markdown",
+        ...integrity,
+        nav: document.nav,
+      };
+    }),
+    ...(captured.openapi && {
+      openapi: {
+        path: captured.openapi.path,
+        ...describeIntegrity(captured.openapi.bytes),
+      },
+    }),
+    provenance,
+  };
+  const v2 = sealManifestV2(core);
+  const manifestBytes = Buffer.from(canonicalJson(v2));
+  const directory = revisionDirectory(v2.revision);
+  const current = createCurrentLocatorV2(v2);
+  return { v1, routes, v2, manifestBytes, current, directory };
+}
+
+async function writeSnapshot(snapshotRoot, publication, captured) {
+  for (const document of captured.documents) {
+    const destination = sourcePath(
+      resolve(snapshotRoot, "docs"),
+      document.source,
+    );
+    await mkdir(dirname(destination), { recursive: true });
+    await writeFile(destination, document.bytes);
+  }
+  if (captured.openapi) {
+    const destination = sourcePath(
+      resolve(snapshotRoot, "docs"),
+      captured.openapi.path,
+    );
+    await mkdir(dirname(destination), { recursive: true });
+    await writeFile(destination, captured.openapi.bytes);
+  }
+  await mkdir(snapshotRoot, { recursive: true });
+  await writeFile(
+    resolve(snapshotRoot, "manifest.json"),
+    publication.manifestBytes,
+  );
+}
+
+async function verifySnapshot(snapshotRoot, publication, captured) {
+  const manifestBytes = await readFile(resolve(snapshotRoot, "manifest.json"));
+  parseLocatedManifestV2(publication.current, manifestBytes);
+  if (!manifestBytes.equals(publication.manifestBytes)) {
+    throw new Error("Existing immutable snapshot manifest differs.");
+  }
+  for (const document of captured.documents) {
+    const bytes = await readFile(
+      sourcePath(resolve(snapshotRoot, "docs"), document.source),
+    );
+    if (!bytes.equals(document.bytes)) {
+      throw new Error(
+        `Existing immutable snapshot differs for '${document.source}'.`,
+      );
+    }
+  }
+  if (captured.openapi) {
+    const bytes = await readFile(
+      sourcePath(resolve(snapshotRoot, "docs"), captured.openapi.path),
+    );
+    if (!bytes.equals(captured.openapi.bytes)) {
+      throw new Error("Existing immutable snapshot differs for OpenAPI input.");
+    }
+  }
+}
+
+async function ensureImmutableSnapshot(machineRoot, publication, captured) {
+  const snapshotsRoot = resolve(machineRoot, "v2", "snapshots");
+  const snapshotRoot = resolve(snapshotsRoot, publication.directory);
+  const temporaryRoot = resolve(
+    snapshotsRoot,
+    `.tmp-${publication.directory}-${process.pid}-${randomUUID()}`,
+  );
+  assertContained(machineRoot, snapshotRoot);
+  assertContained(machineRoot, temporaryRoot);
+  await mkdir(snapshotsRoot, { recursive: true });
+  try {
+    await writeSnapshot(temporaryRoot, publication, captured);
+    await verifySnapshot(temporaryRoot, publication, captured);
+    try {
+      await rename(temporaryRoot, snapshotRoot);
+    } catch (error) {
+      if (!["EEXIST", "ENOTEMPTY", "EPERM"].includes(error?.code)) throw error;
+      await verifySnapshot(snapshotRoot, publication, captured);
+    }
+  } finally {
+    await rm(temporaryRoot, { recursive: true, force: true });
+  }
+  await verifySnapshot(snapshotRoot, publication, captured);
+}
+
+async function readCurrentState(currentPath) {
+  let bytes;
+  try {
+    bytes = await readFile(currentPath);
+  } catch (error) {
+    if (error?.code === "ENOENT") return { token: "ABSENT", locator: null };
+    throw error;
+  }
+  let value;
+  try {
+    value = JSON.parse(bytes.toString("utf8"));
+  } catch {
+    throw new Error("Current locator is not valid JSON.");
+  }
+  const locator = parseCurrentLocatorV2(value);
+  return { token: sha256Hex(canonicalJson(locator)), locator };
+}
+
+async function writeMutableProjection(machineRoot, publication, captured) {
+  for (const document of captured.documents) {
+    const destination = sourcePath(machineRoot, document.source);
+    await mkdir(dirname(destination), { recursive: true });
+    await writeFile(destination, document.bytes);
+  }
+  if (captured.openapi) {
+    const destination = sourcePath(machineRoot, captured.openapi.path);
+    await mkdir(dirname(destination), { recursive: true });
+    await writeFile(destination, captured.openapi.bytes);
+  }
+  await writeFile(
+    resolve(machineRoot, "sumi-docs-routes.json"),
+    `${JSON.stringify({ version: 1, routes: publication.routes }, null, 2)}\n`,
+  );
+  await writeFile(
+    resolve(machineRoot, "sumi-docs-manifest.json"),
+    `${JSON.stringify(publication.v1, null, 2)}\n`,
+  );
+}
+
+async function writeCompleteProjection(machineRoot, publication, captured) {
+  await mkdir(machineRoot, { recursive: false });
+  await writeMutableProjection(machineRoot, publication, captured);
+  await ensureImmutableSnapshot(machineRoot, publication, captured);
+  const currentPath = resolve(machineRoot, "v2", "current.json");
+  await writeFile(
+    currentPath,
+    `${JSON.stringify(publication.current, null, 2)}\n`,
+  );
+}
+
+async function verifyCompleteProjection(machineRoot, publication, captured) {
+  const expectedV1 = `${JSON.stringify(publication.v1, null, 2)}\n`;
+  const expectedRoutes = `${JSON.stringify(
+    { version: 1, routes: publication.routes },
+    null,
+    2,
+  )}\n`;
+  const [actualV1, actualRoutes, current] = await Promise.all([
+    readFile(resolve(machineRoot, "sumi-docs-manifest.json"), "utf8"),
+    readFile(resolve(machineRoot, "sumi-docs-routes.json"), "utf8"),
+    readCurrentState(resolve(machineRoot, "v2", "current.json")),
+  ]);
+  if (actualV1 !== expectedV1 || actualRoutes !== expectedRoutes) {
+    throw new Error("Compatibility projection differs from the candidate.");
+  }
+  const desiredToken = sha256Hex(canonicalJson(publication.current));
+  if (current.token !== desiredToken) {
+    throw new Error("Current locator differs from the candidate.");
+  }
+  for (const document of captured.documents) {
+    const bytes = await readFile(sourcePath(machineRoot, document.source));
+    if (!bytes.equals(document.bytes)) {
+      throw new Error(`Compatibility document differs: '${document.source}'.`);
+    }
+  }
+  if (captured.openapi) {
+    const bytes = await readFile(
+      sourcePath(machineRoot, captured.openapi.path),
+    );
+    if (!bytes.equals(captured.openapi.bytes)) {
+      throw new Error("Compatibility OpenAPI input differs.");
+    }
+  }
+  await verifySnapshot(
+    resolve(machineRoot, "v2", "snapshots", publication.directory),
+    publication,
+    captured,
+  );
+}
+
+export async function publishProjection({
+  outputRoot,
+  contentRoot,
+  publicDir,
+  options,
+  captured,
+  provenance,
+}) {
+  const publication = createPublication({ options, captured, provenance });
+  const machineRoot = resolve(outputRoot, "_mcp");
+  const stagingRoot = resolve(
+    outputRoot,
+    `._mcp-${process.pid}-${randomUUID()}`,
+  );
+  assertContained(outputRoot, machineRoot);
+  assertContained(outputRoot, stagingRoot);
+  await assertPublicationInputsUnchanged({
+    contentRoot,
+    publicDir,
+    options,
+    captured,
+  });
+  await mkdir(outputRoot, { recursive: true });
+  try {
+    try {
+      await verifyCompleteProjection(machineRoot, publication, captured);
+      return publication;
+    } catch (error) {
+      if (error?.code !== "ENOENT") {
+        throw new Error(
+          "CAS_CONFLICT: output already contains another projection.",
+          { cause: error },
+        );
+      }
+    }
+    await writeCompleteProjection(stagingRoot, publication, captured);
+    await verifyCompleteProjection(stagingRoot, publication, captured);
+    await assertPublicationInputsUnchanged({
+      contentRoot,
+      publicDir,
+      options,
+      captured,
+    });
+    try {
+      await rename(stagingRoot, machineRoot);
+    } catch (error) {
+      if (!["EEXIST", "ENOTEMPTY", "EPERM"].includes(error?.code)) throw error;
+      try {
+        await verifyCompleteProjection(machineRoot, publication, captured);
+        return publication;
+      } catch (verificationError) {
+        throw new Error(
+          "CAS_CONFLICT: another projection won the artifact commit.",
+          { cause: verificationError },
+        );
+      }
+    }
+    await verifyCompleteProjection(machineRoot, publication, captured);
+    return publication;
+  } finally {
+    await rm(stagingRoot, { recursive: true, force: true });
+  }
 }
 
 export default function sumiDocsPublisher(rawOptions) {
   const options = normalizePublisherOptions(rawOptions);
   let projectRoot;
   let publicDir;
+  let contentRoot;
+  let captured;
 
   return {
     name: "sumi-docs-publisher",
@@ -83,62 +505,34 @@ export default function sumiDocsPublisher(rawOptions) {
       "astro:config:done": ({ config }) => {
         projectRoot = fileURLToPath(config.root);
         publicDir = fileURLToPath(config.publicDir);
+        contentRoot = options.contentRoot
+          ? resolve(projectRoot, options.contentRoot)
+          : resolve(projectRoot, "src/content/docs");
+      },
+      "astro:build:start": async () => {
+        captured = await capturePublicationInputs({
+          contentRoot,
+          publicDir,
+          options,
+        });
       },
       "astro:build:done": async ({ dir, logger }) => {
+        if (!captured) throw new Error("Publisher inputs were not captured.");
         const outputRoot = fileURLToPath(dir);
-        const machineRoot = resolve(outputRoot, "_mcp");
-        const contentRoot = resolve(projectRoot, "src/content/docs");
-        await mkdir(machineRoot, { recursive: true });
-
-        for (const document of options.documents) {
-          const source = resolve(contentRoot, ...document.source.split("/"));
-          const destination = resolve(
-            machineRoot,
-            ...document.source.split("/"),
-          );
-          assertContained(contentRoot, source);
-          assertContained(machineRoot, destination);
-          if (![".md", ".mdx"].includes(extname(source).toLowerCase())) {
-            throw new Error(
-              "Only Markdown and MDX documents may be published.",
-            );
-          }
-          await mkdir(dirname(destination), { recursive: true });
-          await copyFile(source, destination);
-        }
-
-        if (options.openapi) {
-          const source = resolve(publicDir, ...options.openapi.split("/"));
-          const destination = resolve(
-            machineRoot,
-            ...options.openapi.split("/"),
-          );
-          assertContained(publicDir, source);
-          assertContained(machineRoot, destination);
-          await mkdir(dirname(destination), { recursive: true });
-          await copyFile(source, destination);
-        }
-
-        const manifest = {
-          version: 1,
-          documents: options.documents.map(({ source }) => source),
-          ...(options.openapi && { openapi: options.openapi }),
-        };
-        const routes = Object.fromEntries(
-          options.documents.map(({ source, page }) => [source, page]),
+        const provenance = await resolveProvenance(
+          projectRoot,
+          options.provenance,
         );
-        await Promise.all([
-          writeFile(
-            resolve(machineRoot, "sumi-docs-manifest.json"),
-            `${JSON.stringify(manifest, null, 2)}\n`,
-          ),
-          writeFile(
-            resolve(machineRoot, "sumi-docs-routes.json"),
-            `${JSON.stringify({ version: 1, routes }, null, 2)}\n`,
-          ),
-        ]);
+        const publication = await publishProjection({
+          outputRoot,
+          contentRoot,
+          publicDir,
+          options,
+          captured,
+          provenance,
+        });
         logger.info(
-          `Published ${options.documents.length} documents to ${posix.join("_mcp", "sumi-docs-manifest.json")}.`,
+          `Published ${options.documents.length} documents at ${publication.v2.revision} to ${posix.join("_mcp", "v2", "current.json")}.`,
         );
       },
     },
