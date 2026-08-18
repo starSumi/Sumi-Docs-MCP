@@ -18,21 +18,18 @@ hero:
       icon: setting
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components";
-
 ## Two views, one source
 
-<CardGrid>
-  <Card title="For people" icon="open-book">
-    Browse rendered pages with navigation, accessible code blocks, and local
-    search.
-  </Card>
-  <Card title="For MCP clients" icon="puzzle">
-    Load the strict `_mcp/sumi-docs-manifest.json` projection through the
-    existing read-only tools.
-  </Card>
-  <Card title="One trust boundary" icon="shield-check">
-    Reviewed Markdown and MDX are rendered by Astro. The MCP server parses the
-    published source as data and never executes it.
-  </Card>
-</CardGrid>
+### For people
+
+Browse rendered pages with navigation, accessible code blocks, and local search.
+
+### For MCP clients
+
+Load the strict `_mcp/sumi-docs-manifest.json` projection through the existing
+read-only tools.
+
+### One trust boundary
+
+Reviewed Markdown and MDX are rendered by Astro. The MCP server parses the
+published source as data and never executes it.

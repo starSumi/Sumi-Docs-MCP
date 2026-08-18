@@ -1,6 +1,6 @@
 # Pair freshness baseline only; semantic equivalence requires human review.
-docs/index.mdx: 8f72fade2833872463b54d84fd1f50c1aaf266f9
-docs/zh-cn/index.mdx: d4a8b45a256889512854fe94629c0cd058cbcd68
+docs/index.mdx: 401fe77bf35665ce9d9fe09c9d0cfa9b28b8c2da
+docs/zh-cn/index.mdx: db7d12e391520e6d9340d63e4942380deb4f2d29
 docs/getting-started.md: 0f3c7d080ab201aabb23a0e22c7a796b6eaa94c1
 docs/zh-cn/getting-started.md: 5fcd8705cdad3cdd4cb1cdab1f14b8030b62f019
 docs/configuration.md: db4d15e7427bcd3391045816a8dd938230f93be2

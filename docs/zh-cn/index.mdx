@@ -18,19 +18,17 @@ hero:
       icon: setting
 ---
 
-import { Card, CardGrid } from "@astrojs/starlight/components";
-
 ## 两种视图，同一份来源
 
-<CardGrid>
-  <Card title="面向人类" icon="open-book">
-    通过导航、可访问的代码块和站内搜索阅读渲染后的页面。
-  </Card>
-  <Card title="面向 MCP 客户端" icon="puzzle">
-    通过现有的只读工具加载严格的 `_mcp/sumi-docs-manifest.json` 投影。
-  </Card>
-  <Card title="一条信任边界" icon="shield-check">
-    Astro 渲染经过审阅的 Markdown 和 MDX；MCP
-    服务端只把已发布源文件当作数据解析，不执行其中的代码。
-  </Card>
-</CardGrid>
+### 面向人类
+
+通过导航、可访问的代码块和站内搜索阅读渲染后的页面。
+
+### 面向 MCP 客户端
+
+通过现有的只读工具加载严格的 `_mcp/sumi-docs-manifest.json` 投影。
+
+### 一条信任边界
+
+Astro 渲染经过审阅的 Markdown 和 MDX；MCP 服务端只把已发布源文件当作数据解析，
+不执行其中的代码。
