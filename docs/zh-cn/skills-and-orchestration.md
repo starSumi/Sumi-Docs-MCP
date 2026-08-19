@@ -25,7 +25,7 @@ Agent，也不保存对话状态。
 本地开发者可以在自己的全局 Agent Skill catalog 中安装可选的
 `$sumi-docs-maintain` 角色，其触发范围必须限制在 Sumi Docs 项目家族。仓库不分发、
 也不依赖这个本地角色；Codex、Claude Code 和 VS Code 的项目 MCP adapter 提供文档
-查询 fallback。详见[Agent 宿主集成](/zh-cn/agent-hosts/)。
+查询 fallback。详见[Agent 宿主集成](../agent-hosts/)。
 
 修改或新增可复用集成前先建立 issue，并提供触发与明确不触发的示例、支持的宿主版本、MCP
 前置配置、工作流顺序、失败行为、凭据与批准边界、确定性 eval、兼容影响和回滚方法。
@@ -34,4 +34,4 @@ Agent，也不保存对话状态。
 changelog。如果它引入有状态编排、认证获取或多 Agent 控制，应先设计独立服务边界或
 架构决策，而不是放进当前只读 MCP 服务。
 
-完整仓库流程见[参与贡献](/zh-cn/contributing/)。
+完整仓库流程见[参与贡献](../contributing/)。

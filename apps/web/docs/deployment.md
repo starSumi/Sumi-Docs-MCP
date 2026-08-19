@@ -1,24 +1,44 @@
 # Deployment
 
-The site is a static Astro build. This repository prepares immutable deployment
-candidates but does not select or configure a hosting provider.
+The site is a static Astro build. The root `Documentation site` workflow deploys
+the latest verified `main` commit to GitHub Pages. The separate `Acceptance
+candidate` workflow prepares immutable review artifacts without deploying them.
 
 ## Prerequisites
 
-- Restore or configure the repository's authoritative GitHub remote.
+- Configure the repository's authoritative GitHub remote.
 - Protect the default branch and require both `CI` operating-system jobs.
 - Enable private vulnerability reporting.
-- Select the public HTTPS origin. Subpath deployment is not supported by the
-  current Astro configuration.
+- Enable GitHub Pages with GitHub Actions as its source.
+- Keep the `github-pages` environment restricted to the protected `main`
+  branch.
 - Configure the hosting environment separately from local `.env` files.
+
+## GitHub Pages deployment
+
+For this repository, `SITE_URL` is the HTTPS origin and `BASE_PATH` is the
+project path:
+
+```text
+SITE_URL=https://starsumi.github.io
+BASE_PATH=/Sumi-Docs-MCP/
+```
+
+The workflow obtains both values from `actions/configure-pages`, verifies the
+site and MCP projection under that exact prefix, and uploads only
+`apps/web/dist`. A freshness check immediately before upload prevents a
+superseded `main` commit from becoming the deployment artifact. The deploy job
+holds Pages and OIDC authority but does not check out or execute repository
+code.
 
 ## Build a candidate
 
 Run the root manual `Acceptance candidate` workflow from the exact latest
 `main` commit under test. Enter the full 40-character commit SHA and the public
-HTTPS origin. The workflow rejects a SHA that differs from its dispatch ref or
-current `main`, installs the committed lockfile, validates `SITE_URL`, runs the
-full product suite, and packages the Web and MCP outputs for 14 days.
+HTTPS origin and deployment base path. The workflow rejects a SHA that differs
+from its dispatch ref or current `main`, installs the committed lockfile,
+validates `SITE_URL` and `BASE_PATH`, runs the full product suite, and packages
+the Web and MCP outputs for 14 days.
 
 The workflow emits:
 
@@ -51,10 +71,11 @@ accepted candidate.
 
 ## Promotion and rollback
 
-Configure the chosen host to publish the accepted archive, or to reproduce the
-same commit, lockfile, Node version, and `SITE_URL` when direct artifact
-promotion is unavailable. Verify the deployed URLs before changing DNS or
-announcing availability.
+For GitHub Pages, roll forward by merging a verified change to `main`; the Pages
+workflow rebuilds that exact commit. For another host, publish the accepted
+archive or reproduce the same commit, lockfile, Node version, `SITE_URL`, and
+`BASE_PATH`. Verify the deployed URLs before changing DNS or announcing
+availability.
 
 Keep the previously accepted archive and its deployment identifier. Do not
 mutate a deployed snapshot directory or promote a build whose source-drift gate

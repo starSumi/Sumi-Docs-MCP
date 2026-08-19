@@ -10,6 +10,10 @@ This file records user-visible changes to the documentation site.
   route, digest, navigation, and source provenance metadata while preserving
   manifest v1.
 - Added build-time source drift detection before projection promotion.
+- Added verified GitHub Pages deployment with explicit origin and base-path
+  configuration.
+- Added generated-output checks for canonical URLs, sitemaps, exact-case API
+  routes, and every local HTML reference.
 
 ## 0.1.0 - 2026-08-14
 
