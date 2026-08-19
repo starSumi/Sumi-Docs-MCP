@@ -16,7 +16,7 @@ Use this sequence at the start of a new maintenance session:
    generated files or a prior report.
 6. Preserve unrelated work and stage exact paths only.
 7. Treat local passing output as provisional until it is rerun for one clean
-   candidate commit and read back from the private remote CI run.
+   candidate commit and read back from the origin CI run.
 
 Then read the [product requirements](../product/product-requirements.md),
 [checkpoint protocol](checkpoints.md), [release checklist](release-readiness.md),

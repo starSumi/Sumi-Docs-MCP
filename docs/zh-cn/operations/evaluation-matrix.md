@@ -21,7 +21,7 @@ description: 阻断能力、命令、阈值、证据和回滚责任。
 | E-P01 | MCP package 边界                      | `pnpm run pack:mcp`                                  | 预览只包含声明的分发文件。                                                         |
 | E-X01 | Windows 可执行文件                    | SEA 构建、版本与可执行 smoke                         | 当前源码构建出的 hash 通过协议 smoke。                                             |
 | E-X02 | 冷启动                                | 保留原始输出的 5 次 benchmark                        | 每次实测都必须低于 100 ms，目标低于 50 ms。                                        |
-| E-R01 | 候选来源                              | 私有候选 workflow 与摘要读回                         | 构建无特权；提升绑定最新 main、受保护且绑定 commit。                               |
+| E-R01 | 候选来源                              | 验收候选 workflow 与摘要读回                         | 构建无特权；提升绑定最新 main、受保护且绑定 commit。                               |
 | E-R02 | 签名与公开隐私                        | 签名验证与全 refs 身份扫描                           | 签名和公开邮箱策略通过，或有负责人接受的例外。                                     |
 | E-U01 | 人工验收                              | CP6 记录                                             | 一名负责人在测试 Web/MCP 后接受一个 commit 与摘要集合。                            |
 

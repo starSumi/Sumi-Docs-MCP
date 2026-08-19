@@ -1,6 +1,7 @@
 import { build } from "esbuild";
+import { writeFileSync } from "node:fs";
 
-await build({
+const result = await build({
   entryPoints: ["scripts/sea-entry.ts"],
   outfile: ".sea/entry.cjs",
   bundle: true,
@@ -9,5 +10,12 @@ await build({
   target: "node25",
   minify: true,
   sourcemap: false,
-  legalComments: "none",
+  legalComments: "eof",
+  metafile: true,
 });
+
+writeFileSync(
+  ".sea/esbuild-metafile.json",
+  `${JSON.stringify(result.metafile, null, 2)}\n`,
+  "utf8",
+);

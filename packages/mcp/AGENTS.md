@@ -196,7 +196,7 @@ The project target is less than 50 ms from process spawn to the first
 `tools/list` response, with a hard limit of 100 ms. The benchmark command is:
 
 ```powershell
-pnpm run benchmark:cold-start -- --docs examples/basic/docs --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 
 This is an open gate: prior Node.js 25.5 measurements were approximately
@@ -222,7 +222,7 @@ For SEA or packaging changes, also run on Node.js 25.5 or newer:
 pnpm run build:sea
 .\artifacts\bin\sumi-docs-mcp.exe --version
 pnpm run example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
-pnpm run benchmark:cold-start -- --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm run benchmark:cold-start --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 
 Report failed gates as failures with the measured evidence. Do not replace test

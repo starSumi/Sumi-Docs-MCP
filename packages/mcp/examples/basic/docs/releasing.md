@@ -17,14 +17,14 @@ pnpm run smoke:mcp
 pnpm run pack:mcp
 pnpm run build:sea
 pnpm --filter @sumi-os/docs-mcp example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
-pnpm run benchmark:cold-start -- --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm run benchmark:cold-start --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 
 `pnpm run pack:mcp` is a dry run. It validates the package boundary but does not
 produce a release tarball. The cold-start hard limit is 100 ms for every
 measured run; a failed performance command blocks release.
 
-## Build a private candidate
+## Build an acceptance candidate
 
 Run the repository `Acceptance candidate` workflow from the latest `main` and
 provide:
@@ -43,11 +43,16 @@ runs. It uploads one commit-bound artifact retained for 14 days:
 - `sumi-docs-web-<commit>.zip.sha256`;
 - `cold-start.json`.
 
+Both archives contain the project license, deterministic third-party notices,
+and a CycloneDX component inventory. The MCP archive also contains the Node.js
+runtime license. The SEA bundle preserves legal comments and its esbuild
+metafile is checked against the production dependency inventory.
+
 The workflow uploads the raw evidence before enforcing the performance gate, so
 a failed run can be diagnosed without treating its artifact as accepted.
 
 An optional, separate job attests the two ZIP files only when the repository
-variable `ENABLE_PRIVATE_ATTESTATION` is `true` and the protected
+variable `ENABLE_ATTESTATION` is `true` and the protected
 `candidate-attestation` environment is available. A skipped attestation is an
 open release gate. It is not equivalent to a successful attestation.
 
@@ -80,7 +85,7 @@ Do not create or push a release tag from this procedure. A later promotion
 workflow must consume the exact accepted artifact without rebuilding it, verify
 its checksums and accepted commit, enforce signing and provenance policy, and
 provide a rollback target. Until that workflow exists and passes human review,
-the repository remains a private candidate.
+the repository remains a pre-release source project.
 
 Version changes must update package metadata, CLI and MCP server identity, and
 the changelog in the same commit. Do not create a `v1.0.0` tag while the

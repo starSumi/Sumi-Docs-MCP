@@ -75,7 +75,7 @@ jobs:
         run: pnpm run build:sea
 
       - name: Smoke test Windows executable
-        run: pnpm --filter @sumi-os/docs-mcp example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
+        run: pnpm --filter @sumi-os/docs-mcp example:smoke --executable artifacts/bin/sumi-docs-mcp.exe
 
       - name: Record performance gate
         id: performance
@@ -83,7 +83,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifacts | Out-Null
-          pnpm run benchmark:cold-start -- --iterations 30 --executable artifacts/bin/sumi-docs-mcp.exe --output ../../artifacts/cold-start.json
+          pnpm run benchmark:cold-start --iterations 30 --executable artifacts/bin/sumi-docs-mcp.exe --output ../../artifacts/cold-start.json
           exit $LASTEXITCODE
 
       - name: Package candidate
@@ -92,8 +92,24 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifacts | Out-Null
-          Compress-Archive -Path packages/mcp/artifacts/bin/sumi-docs-mcp.exe -DestinationPath "artifacts/sumi-docs-mcp-$($env:REQUESTED_COMMIT.ToLowerInvariant()).zip"
-          Compress-Archive -Path apps/web/dist/* -DestinationPath "artifacts/sumi-docs-web-$($env:REQUESTED_COMMIT.ToLowerInvariant()).zip"
+          pnpm run build:compliance
+          $stagingRoot = 'artifacts/candidate-staging'
+          $mcpRoot = Join-Path $stagingRoot 'mcp'
+          $webRoot = Join-Path $stagingRoot 'web'
+          Remove-Item -LiteralPath $stagingRoot -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force $mcpRoot, $webRoot | Out-Null
+          Copy-Item packages/mcp/artifacts/bin/sumi-docs-mcp.exe $mcpRoot
+          Copy-Item apps/web/dist/* $webRoot -Recurse
+          Copy-Item LICENSE $mcpRoot
+          Copy-Item LICENSE $webRoot
+          Copy-Item artifacts/compliance/mcp/THIRD_PARTY_NOTICES.txt $mcpRoot
+          Copy-Item artifacts/compliance/mcp/bom.cdx.json $mcpRoot
+          Copy-Item artifacts/compliance/mcp/NODEJS_LICENSE.txt $mcpRoot
+          Copy-Item artifacts/compliance/web/THIRD_PARTY_NOTICES.txt $webRoot
+          Copy-Item artifacts/compliance/web/bom.cdx.json $webRoot
+          Compress-Archive -Path "$mcpRoot/*" -DestinationPath "artifacts/sumi-docs-mcp-$($env:REQUESTED_COMMIT.ToLowerInvariant()).zip"
+          Compress-Archive -Path "$webRoot/*" -DestinationPath "artifacts/sumi-docs-web-$($env:REQUESTED_COMMIT.ToLowerInvariant()).zip"
+          Remove-Item -LiteralPath $stagingRoot -Recurse -Force
           Get-ChildItem artifacts/*.zip | ForEach-Object {
             $hash = (Get-FileHash -Algorithm SHA256 $_.FullName).Hash.ToLowerInvariant()
             "$hash  $($_.Name)" | Set-Content -Encoding ascii "$($_.FullName).sha256"
@@ -136,7 +152,7 @@ jobs:
   attest:
     name: Attest protected candidate
     needs: build
-    if: ${{ github.ref == 'refs/heads/main' && vars.ENABLE_PRIVATE_ATTESTATION == 'true' }}
+    if: ${{ github.ref == 'refs/heads/main' && vars.ENABLE_ATTESTATION == 'true' }}
     runs-on: windows-2025
     timeout-minutes: 10
     environment: candidate-attestation

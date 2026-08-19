@@ -1,5 +1,6 @@
 import { spawn } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { createInterface } from "node:readline";
 import { performance } from "node:perf_hooks";
@@ -25,6 +26,11 @@ const meta = {
 
 if (!Number.isInteger(iterations) || iterations < 1) {
   throw new Error("--iterations must be a positive integer.");
+}
+if (options._.length > 0) {
+  throw new Error(
+    `Unexpected positional arguments: ${options._.join(" ")}. Pass pnpm script options without a standalone --.`,
+  );
 }
 
 async function measureOnce() {
@@ -116,18 +122,27 @@ for (let iteration = 0; iteration < iterations; iteration += 1) {
 }
 
 const times = measurements.map((result) => result.elapsedMs);
+const sortedTimes = [...times].sort((a, b) => a - b);
+const executablePath = resolve(benchmarkExecutable ?? process.execPath);
 const summary = {
   benchmarkRunnerRuntime: process.version,
-  executable: toPortableReportPath(benchmarkExecutable ?? process.execPath),
+  platform: process.platform,
+  architecture: process.arch,
+  executable: toPortableReportPath(executablePath),
+  executableSha256: createHash("sha256")
+    .update(readFileSync(executablePath))
+    .digest("hex"),
   docsRoot: toPortableReportPath(docsRoot),
   diagnosticMessageCount: measurements.filter((result) => result.stderr.trim())
     .length,
   iterations,
   minMs: Number(Math.min(...times).toFixed(2)),
-  medianMs: Number(
-    [...times].sort((a, b) => a - b)[Math.floor(times.length / 2)].toFixed(2),
+  medianMs: Number(sortedTimes[Math.floor(times.length / 2)].toFixed(2)),
+  p95Ms: Number(
+    sortedTimes[Math.ceil(sortedTimes.length * 0.95) - 1].toFixed(2),
   ),
   maxMs: Number(Math.max(...times).toFixed(2)),
+  measurementsMs: times.map((time) => Number(time.toFixed(2))),
   hardLimitMs,
   passed: Math.max(...times) < hardLimitMs,
 };

@@ -6,12 +6,16 @@ import sumiDocsPublisher from "./integrations/sumi-docs-publisher.mjs";
 import { catalogSidebar, contentCatalog } from "./src/content-catalog.ts";
 import { contentRoot } from "./src/content-root.ts";
 import { canonicalTypeDocRoutes } from "./src/typedoc-routes.ts";
+import sumiBrowserComponents from "./integrations/sumi-browser-components.mjs";
 
 const site = process.env.SITE_URL || "http://127.0.0.1:4321";
 const portableFilePath = (url) => fileURLToPath(url).replaceAll("\\", "/");
 
 export default defineConfig({
   site,
+  vite: {
+    plugins: [sumiBrowserComponents()],
+  },
   integrations: [
     starlight({
       title: {
@@ -35,6 +39,13 @@ export default defineConfig({
         src: "./src/assets/sumi-docs-mark.png",
         alt: "Sumi Docs",
       },
+      social: [
+        {
+          icon: "github",
+          label: "GitHub",
+          href: "https://github.com/starSumi/Sumi-Docs-MCP",
+        },
+      ],
       expressiveCode: {
         themes: ["starlight-dark", "starlight-light"],
         useStarlightDarkModeSwitch: true,

@@ -3,4 +3,8 @@ set -e
 node scripts/verify-host-files.mjs --staged
 node scripts/verify-translation-pairing.mjs --cached
 node packages/mcp/scripts/git-hooks/reject-agent-identity.mjs
-pnpm run lint:staged
+if command -v volta >/dev/null 2>&1; then
+  volta run --node 25.5.0 -- pnpm run lint:staged
+else
+  pnpm run lint:staged
+fi

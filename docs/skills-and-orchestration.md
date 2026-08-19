@@ -24,11 +24,11 @@ next or retain conversation state.
 
 ## Maintainer Skill
 
-The repository ships the optional `$sumi-docs-maintain` project Skill under
-`.agents/skills/`, with a thin Claude Code adapter under `.claude/skills/`. It
-routes repository maintenance to the owning package and validation gates. It is
-not installed as a global or system Skill, and it is not required to query the
-MCP server. See [Agent host integration](/agent-hosts/).
+Local developers may install the optional `$sumi-docs-maintain` role in their
+global agent Skill catalog. Its activation must remain limited to the Sumi Docs
+project family. The repository does not ship or require that local role; the
+project MCP adapters provide the documentation-query fallback for Codex, Claude
+Code, and VS Code. See [Agent host integration](/agent-hosts/).
 
 Open an issue before changing or adding a reusable integration. Include trigger and
 non-trigger examples, supported host versions, MCP prerequisites, the ordered

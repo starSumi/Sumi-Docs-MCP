@@ -1,10 +1,9 @@
 # Security policy
 
-Sumi Docs is under private development and does not yet have a supported public
+Sumi Docs publishes source code but does not yet have a supported product
 release. Do not report vulnerabilities in a public issue.
 
-Repository collaborators should use GitHub private vulnerability reporting when
-it is enabled. Until then, contact the repository owner through a private channel
+Use [GitHub private vulnerability reporting](https://github.com/starSumi/Sumi-Docs-MCP/security/advisories/new)
 and include the affected commit, reproduction steps, impact, and any known
 mitigation. Do not include secrets or private corpus content in logs or reports.
 

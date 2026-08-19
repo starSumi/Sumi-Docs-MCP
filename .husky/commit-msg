@@ -1,4 +1,8 @@
 set -e
 
-pnpm run commitlint -- --edit "$1"
+if command -v volta >/dev/null 2>&1; then
+  volta run --node 25.5.0 -- pnpm run commitlint -- --edit "$1"
+else
+  pnpm run commitlint -- --edit "$1"
+fi
 node packages/mcp/scripts/git-hooks/reject-agent-attribution.mjs "$1"

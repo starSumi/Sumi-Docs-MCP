@@ -254,10 +254,18 @@ for (const file of apiHtmlFiles) {
 
 assert.match(englishHome, /<main[^>]+lang="en"/);
 assert.match(englishHome, /href="\/getting-started\/"/);
+assert.match(
+  englishHome,
+  /href="https:\/\/github\.com\/starSumi\/Sumi-Docs-MCP"/,
+);
 assert.match(chineseHome, /<main[^>]+lang="zh-CN"/);
 assert.match(chineseHome, />Sumi 文档<\/h1>/);
 assert.match(chineseHome, /href="\/zh-cn\/getting-started\/"/);
 assert.match(chineseHome, /href="\/zh-cn\/configuration\/"/);
+assert.match(
+  chineseHome,
+  /href="https:\/\/github\.com\/starSumi\/Sumi-Docs-MCP"/,
+);
 assert.match(apiReference, /@sumi-os\/corpus-contract/);
 assert.match(apiReference, /<main[^>]+lang="en"/);
 assert.doesNotMatch(apiReference, /[A-Z]:\\/u);

@@ -145,6 +145,12 @@ export function validateWorkflowPolicy({
   }
   const buildSteps = workflowSteps({ jobs: { build } });
   const performance = buildSteps.find((step) => step.id === "performance");
+  const packageCandidate = buildSteps.find(
+    (step) => step.name === "Package candidate",
+  );
+  const smokeExecutable = buildSteps.find(
+    (step) => step.name === "Smoke test Windows executable",
+  );
   const candidateUpload = buildSteps.find((step) =>
     step.uses?.startsWith("actions/upload-artifact@"),
   );
@@ -158,6 +164,12 @@ export function validateWorkflowPolicy({
   if (
     performance?.["continue-on-error"] !== true ||
     !String(performance?.run ?? "").includes(
+      "benchmark:cold-start --iterations 30",
+    ) ||
+    String(performance?.run ?? "").includes(
+      "benchmark:cold-start -- --iterations",
+    ) ||
+    !String(performance?.run ?? "").includes(
       "--output ../../artifacts/cold-start.json",
     ) ||
     String(performance?.run ?? "").includes("*>") ||
@@ -167,6 +179,32 @@ export function validateWorkflowPolicy({
   ) {
     errors.push(
       "Candidate performance diagnostics must upload before a blocking final gate.",
+    );
+  }
+  const packageRun = String(packageCandidate?.run ?? "");
+  if (
+    !packageRun.includes("pnpm run build:compliance") ||
+    !packageRun.includes("artifacts/compliance/mcp/THIRD_PARTY_NOTICES.txt") ||
+    !packageRun.includes("artifacts/compliance/mcp/bom.cdx.json") ||
+    !packageRun.includes("artifacts/compliance/mcp/NODEJS_LICENSE.txt") ||
+    !packageRun.includes("artifacts/compliance/web/THIRD_PARTY_NOTICES.txt") ||
+    !packageRun.includes("artifacts/compliance/web/bom.cdx.json") ||
+    packageRun.includes("artifacts/compliance/web/NODEJS_LICENSE.txt") ||
+    (packageRun.match(/Copy-Item LICENSE/gu) ?? []).length !== 2
+  ) {
+    errors.push(
+      "Candidate archives must include project, runtime, third-party, and SBOM compliance material.",
+    );
+  }
+  const smokeRun = String(smokeExecutable?.run ?? "");
+  if (
+    !smokeRun.includes(
+      "example:smoke --executable artifacts/bin/sumi-docs-mcp.exe",
+    ) ||
+    smokeRun.includes("example:smoke -- --executable")
+  ) {
+    errors.push(
+      "Candidate smoke validation must execute the built SEA binary.",
     );
   }
   const expectedCandidateArtifacts = [
@@ -191,7 +229,7 @@ export function validateWorkflowPolicy({
   }
   if (
     attest?.environment !== "candidate-attestation" ||
-    !String(attest?.if ?? "").includes("ENABLE_PRIVATE_ATTESTATION") ||
+    !String(attest?.if ?? "").includes("ENABLE_ATTESTATION") ||
     !String(attest?.if ?? "").includes("refs/heads/main")
   ) {
     errors.push("Attestation must be explicit, protected, and main-only.");

@@ -7,8 +7,8 @@ Sumi Docs publishes one reviewed documentation corpus for two consumers:
 - people browse an Astro and Starlight website;
 - agents query the same corpus through a read-only MCP server.
 
-This repository is private and under active development. It is not yet a public
-release.
+The source repository is public and under active development. No npm package,
+tagged GitHub Release, production site, or production binary has been published.
 
 ## Prerequisites
 
@@ -65,5 +65,5 @@ Package-specific instructions remain in each workspace. Active architecture
 decisions live under `packages/mcp/docs/decisions/`; the root handbook presents
 their user-facing consequences without duplicating the decision records.
 
-No tag, package publish, visibility change, or public release is allowed before
-the documented human acceptance gate.
+Source visibility does not publish a tag, package, site, or binary. Those
+artifacts remain subject to the documented release gates.

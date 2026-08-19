@@ -20,14 +20,17 @@
     "README.md"
   ],
   "scripts": {
-    "build": "pnpm run clean && tsc",
+    "build": "node --run clean && tsc",
     "clean": "node -e \"require('node:fs').rmSync('dist',{recursive:true,force:true})\"",
     "typecheck": "tsc --noEmit",
-    "test": "pnpm run build && node --test tests/**/*.test.mjs",
-    "verify": "pnpm run typecheck && pnpm test"
+    "test": "node --run build && node --test tests/**/*.test.mjs",
+    "verify": "node --run typecheck && node --run test"
   },
   "engines": {
     "node": ">=25.5.0"
+  },
+  "volta": {
+    "extends": "../../package.json"
   },
   "devDependencies": {
     "@types/node": "^25.9.5",

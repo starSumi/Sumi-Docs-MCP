@@ -1,4 +1,0 @@
-interface:
-  display_name: "Sumi Docs Local Developer Maintainer"
-  short_description: "Route maintenance to the global Sumi Docs project-family role"
-  default_prompt: "Use $sumi-docs-maintain only for the Sumi Docs project family to reconcile product changes with its reviewed documentation corpus."

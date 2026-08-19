@@ -13,7 +13,7 @@ description: 在新的维护会话开始时安全地重建当前状态。
 4. 使用 Node.js 25.5.0 或更高版本，先运行范围最小的失败门。
 5. 信任本地生成物或旧报告之前，先检查不可变语料 revision 和 GitHub checks。
 6. 保留无关改动，只暂存本次任务的精确路径。
-7. 在同一个干净候选提交上重新运行并从私有远程 CI 回读之前，本地通过结果只能视为临时证据。
+7. 在同一个干净候选提交上重新运行并从远程 CI 回读之前，本地通过结果只能视为临时证据。
 
 随后阅读[产品需求](../product/product-requirements.md)、[检查点协议](checkpoints.md)、
 [发布清单](release-readiness.md)和[评估矩阵](evaluation-matrix.md)。这些文档定义工作

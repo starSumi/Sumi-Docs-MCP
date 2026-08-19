@@ -165,8 +165,8 @@ There are no application environment variables. The cold-start benchmark also
 uses CLI options:
 
 ```powershell
-pnpm run benchmark:cold-start -- --docs examples/basic/docs --iterations 5
-pnpm run benchmark:cold-start -- --docs examples/basic/docs --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 5
+pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 
 Do not add `.env.example` until the application has an actual environment-based

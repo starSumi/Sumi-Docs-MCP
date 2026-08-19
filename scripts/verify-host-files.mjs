@@ -2,9 +2,6 @@ import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 export const ALLOWED_HOST_FILES = new Set([
-  ".agents/skills/sumi-docs-maintain/SKILL.md",
-  ".agents/skills/sumi-docs-maintain/agents/openai.yaml",
-  ".claude/skills/sumi-docs-maintain/SKILL.md",
   ".codex/config.toml",
   ".mcp.json",
   ".vscode/mcp.json",
@@ -57,44 +54,6 @@ export function validateHostEntries(entries, { requireComplete = false } = {}) {
   return errors;
 }
 
-export function validateHostContents(contents) {
-  const errors = [];
-  const maintainerSkill = contents.get(
-    ".agents/skills/sumi-docs-maintain/SKILL.md",
-  );
-  if (maintainerSkill !== undefined) {
-    for (const marker of [
-      "Sumi Docs project family",
-      "globally activated `sumi-docs-maintain` skill",
-      "sumi-docs.config.json",
-      "pnpm-workspace.yaml",
-      "@sumi-os/docs-mcp",
-    ]) {
-      if (!maintainerSkill.includes(marker)) {
-        errors.push(
-          `Maintainer Skill adapter is missing the scope marker: ${marker}`,
-        );
-      }
-    }
-  }
-
-  const claudeAdapter = contents.get(
-    ".claude/skills/sumi-docs-maintain/SKILL.md",
-  );
-  if (
-    claudeAdapter !== undefined &&
-    !claudeAdapter.includes(
-      "../../../.agents/skills/sumi-docs-maintain/SKILL.md",
-    )
-  ) {
-    errors.push(
-      "Claude Skill adapter must route to the canonical maintainer Skill.",
-    );
-  }
-
-  return errors;
-}
-
 function runGit(args, cwd) {
   const result = spawnSync("git", args, {
     cwd,
@@ -124,21 +83,12 @@ function readStagedEntries(cwd) {
   );
 }
 
-function readIndexContents(entries, cwd) {
-  return new Map(
-    entries
-      .filter((entry) => isHostControlledPath(entry.path))
-      .map((entry) => [entry.path, runGit(["show", `:${entry.path}`], cwd)]),
-  );
-}
-
 export function verifyHostFiles(mode, cwd = process.cwd()) {
   const entries =
     mode === "--staged" ? readStagedEntries(cwd) : readTrackedEntries(cwd);
   const errors = validateHostEntries(entries, {
     requireComplete: mode === "--tracked",
   });
-  errors.push(...validateHostContents(readIndexContents(entries, cwd)));
   if (errors.length > 0) throw new Error(errors.join("\n"));
   return entries.filter((entry) => isHostControlledPath(entry.path)).length;
 }

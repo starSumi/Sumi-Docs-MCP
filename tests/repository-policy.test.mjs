@@ -13,7 +13,6 @@ import {
   ALLOWED_HOST_FILES,
   isHostControlledPath,
   parseIndexEntries,
-  validateHostContents,
   validateHostEntries,
 } from "../scripts/verify-host-files.mjs";
 import { validateLockfile } from "../scripts/verify-lockfile.mjs";
@@ -83,41 +82,6 @@ test("tracked host adapter validation requires the complete supported set", () =
   ]);
 });
 
-test("host maintenance adapters route the scoped global maintainer", () => {
-  const valid = new Map([
-    [
-      ".agents/skills/sumi-docs-maintain/SKILL.md",
-      [
-        "Sumi Docs project family",
-        "globally activated `sumi-docs-maintain` skill",
-        "sumi-docs.config.json",
-        "pnpm-workspace.yaml",
-        "@sumi-os/docs-mcp",
-      ].join("\n"),
-    ],
-    [
-      ".claude/skills/sumi-docs-maintain/SKILL.md",
-      "../../../.agents/skills/sumi-docs-maintain/SKILL.md",
-    ],
-  ]);
-  assert.deepEqual(validateHostContents(valid), []);
-
-  const stale = new Map(valid);
-  stale.set(
-    ".agents/skills/sumi-docs-maintain/SKILL.md",
-    "Sumi Docs project family\npnpm-workspace.yaml",
-  );
-  stale.set(
-    ".claude/skills/sumi-docs-maintain/SKILL.md",
-    "../../../docs/maintenance.md",
-  );
-  const errors = validateHostContents(stale);
-  assert.ok(errors.some((error) => error.includes("scope marker")));
-  assert.ok(
-    errors.some((error) => error.includes("canonical maintainer Skill")),
-  );
-});
-
 test("git index parsing is NUL-safe", () => {
   const output =
     "100644 aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa 0\t.codex/config.toml\0" +
@@ -183,6 +147,53 @@ test("the install lifecycle requires the pinned pnpm version", () => {
   );
   assert.match(validatePackageManager("npm/11.15.0 node/v25.5.0"), /Use pnpm/u);
   assert.match(validatePackageManager("pnpm/10.25.0 npm/?"), /Expected pnpm/u);
+
+  for (const workspacePackagePath of [
+    "apps/web/package.json",
+    "packages/corpus-contract/package.json",
+    "packages/mcp/package.json",
+  ]) {
+    const workspacePackage = JSON.parse(
+      readFileSync(workspacePackagePath, "utf8"),
+    );
+    assert.deepEqual(workspacePackage.volta, {
+      extends: "../../package.json",
+    });
+  }
+
+  const packageFiles = [
+    "package.json",
+    "apps/web/package.json",
+    "packages/corpus-contract/package.json",
+    "packages/mcp/package.json",
+  ];
+  for (const packageFile of packageFiles) {
+    const manifest = JSON.parse(readFileSync(packageFile, "utf8"));
+    for (const [name, command] of Object.entries(manifest.scripts ?? {})) {
+      assert.doesNotMatch(
+        command,
+        /(?:^|&&|\|\|)\s*pnpm(?:\s+run)?\b/u,
+        `${packageFile} script ${name} recursively invokes pnpm`,
+      );
+    }
+  }
+
+  for (const hookPath of [
+    ".husky/commit-msg",
+    ".husky/pre-commit",
+    ".husky/pre-push",
+  ]) {
+    const hook = readFileSync(hookPath, "utf8");
+    assert.match(hook, /command -v volta/u);
+    assert.match(hook, /volta run --node 25\.5\.0 -- pnpm run/u);
+    assert.match(hook, /else\n {2}pnpm run (?:commitlint|lint:staged|verify)/u);
+  }
+
+  const rootPackageManifest = JSON.parse(readFileSync("package.json", "utf8"));
+  assert.equal(
+    rootPackageManifest.scripts["build:compliance"],
+    "node scripts/build-compliance-artifacts.mjs && node scripts/verify-compliance-artifacts.mjs",
+  );
 
   const accepted = spawnSync(
     process.execPath,
@@ -336,7 +347,7 @@ test("duplicate-code growth is bounded by one root policy", () => {
 
   assert.equal(rootPackage.devDependencies.jscpd, "5.0.12");
   assert.match(rootPackage.scripts.duplication, /^jscpd\b/u);
-  assert.ok(rootPackage.scripts.verify.includes("pnpm duplication"));
+  assert.ok(rootPackage.scripts.verify.includes("node --run duplication"));
   assert.equal(config.threshold, 5);
   assert.equal(config.minTokens, 60);
   assert.ok(config.ignore.includes("**/tests/**"));
@@ -362,6 +373,21 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   weakened.candidate.jobs.build.steps.find(
     (step) => step.name === "Upload for human acceptance",
   ).with.path = "artifacts/*";
+  weakened.candidate.jobs.build.steps.find(
+    (step) => step.id === "performance",
+  ).run =
+    "pnpm run benchmark:cold-start -- --iterations 30 --output ../../artifacts/cold-start.json";
+  weakened.candidate.jobs.build.steps.find(
+    (step) => step.name === "Package candidate",
+  ).run = [
+    "pnpm run build:compliance",
+    "Copy-Item artifacts/compliance/web/NODEJS_LICENSE.txt web",
+    "Compress-Archive artifacts/bin/sumi-docs-mcp.exe artifacts/mcp.zip",
+  ].join("\n");
+  weakened.candidate.jobs.build.steps.find(
+    (step) => step.name === "Smoke test Windows executable",
+  ).run =
+    "pnpm --filter @sumi-os/docs-mcp example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe";
   weakened.ci.jobs.verify.steps = weakened.ci.jobs.verify.steps.filter(
     (step) => step.name !== "Install the pinned package manager",
   );
@@ -371,5 +397,7 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   assert.ok(errors.some((error) => error.includes("performance diagnostics")));
   assert.ok(errors.some((error) => error.includes("structured allowlist")));
   assert.ok(errors.some((error) => error.includes("structured observation")));
+  assert.ok(errors.some((error) => error.includes("compliance material")));
+  assert.ok(errors.some((error) => error.includes("built SEA binary")));
   assert.ok(errors.some((error) => error.includes("pinned pnpm")));
 });

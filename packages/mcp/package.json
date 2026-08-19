@@ -17,6 +17,9 @@
   "engines": {
     "node": ">=25.5.0"
   },
+  "volta": {
+    "extends": "../../package.json"
+  },
   "bin": {
     "sumi-docs-mcp": "./dist/index.js"
   },
@@ -32,9 +35,10 @@
     "preview:docs": "node scripts/preview-docs.js",
     "start": "node dist/index.js serve examples/basic/docs --openapi examples/basic/openapi.json",
     "build": "node scripts/clean-dist.js && tsc && node scripts/post-build.js",
-    "build:sea": "pnpm run build && node scripts/build-sea-bundle.js && node scripts/build-sea.js",
+    "build:sea-bundle": "node --run build && node scripts/build-sea-bundle.js",
+    "build:sea": "node --run build:sea-bundle && node scripts/build-sea.js",
     "benchmark:cold-start": "node scripts/benchmark-cold-start.js",
-    "example:smoke": "pnpm run build && node scripts/smoke-example.js",
+    "example:smoke": "node --run build && node scripts/smoke-example.js",
     "test": "node --import tsx --test tests/**/*.test.ts",
     "test:watch": "node --import tsx --test --watch tests/**/*.test.ts",
     "typecheck": "tsc --noEmit",
@@ -42,12 +46,12 @@
     "lint:staged": "lint-staged --fail-on-changes",
     "commitlint": "commitlint",
     "test:git-hooks": "node scripts/git-hooks/test-gates.mjs",
-    "verify": "pnpm run lint && pnpm run typecheck && pnpm test && pnpm run test:git-hooks",
-    "audit:prod": "pnpm audit --prod --audit-level high --registry https://registry.npmjs.org",
-    "verify:push": "pnpm run verify && pnpm run audit:prod",
+    "verify": "node --run lint && node --run typecheck && node --run test && node --run test:git-hooks",
+    "audit:prod": "node ../../scripts/run-pnpm-command.mjs audit --prod --audit-level high --registry https://registry.npmjs.org",
+    "verify:push": "node --run verify && node --run audit:prod",
     "format": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
     "clean": "node -e \"const fs=require('node:fs'); for (const path of ['dist','.sea','artifacts','sea-prep.blob']) fs.rmSync(path,{recursive:true,force:true})\"",
-    "prepack": "pnpm run build"
+    "prepack": "node --run build"
   },
   "keywords": [
     "mcp",

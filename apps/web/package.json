@@ -19,10 +19,13 @@
   "engines": {
     "node": ">=25.5.0"
   },
+  "volta": {
+    "extends": "../../package.json"
+  },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro check && astro build && pnpm run verify:dist",
-    "build:release": "pnpm run validate:release-env && pnpm run build",
+    "build": "astro check && astro build && node --run verify:dist",
+    "build:release": "node --run validate:release-env && node --run build",
     "preview": "astro preview",
     "check": "astro check",
     "test": "node --test tests/**/*.test.mjs",
@@ -33,10 +36,10 @@
     "verify:dist": "node scripts/verify-dist.mjs",
     "verify:mcp": "node scripts/verify-mcp.mjs",
     "validate:release-env": "node scripts/validate-release-env.mjs",
-    "audit:prod": "pnpm audit --prod --audit-level high --registry https://registry.npmjs.org",
-    "verify": "pnpm run format:check && pnpm test && pnpm run test:git-hooks && pnpm run build",
-    "verify:release": "pnpm run format:check && pnpm test && pnpm run build:release && pnpm run audit:prod",
-    "verify:push": "pnpm run verify && pnpm run audit:prod"
+    "audit:prod": "node ../../scripts/run-pnpm-command.mjs audit --prod --audit-level high --registry https://registry.npmjs.org",
+    "verify": "node --run format:check && node --run test && node --run test:git-hooks && node --run build",
+    "verify:release": "node --run format:check && node --run test && node --run build:release && node --run audit:prod",
+    "verify:push": "node --run verify && node --run audit:prod"
   },
   "dependencies": {
     "@astrojs/starlight": "^0.41.7",

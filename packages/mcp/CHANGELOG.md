@@ -15,6 +15,10 @@ This file records user-visible changes. Internal phase notes are retained under
   existing four-tool surface and manifest v1 behavior.
 - Prevented non-Git discovery from walking into parent directories such as a
   workspace container named `.sumi`.
+- Made cold-start benchmarks reject invalid pnpm argument forwarding and record
+  the executable digest, raw measurements, and p95 latency.
+- Preserved bundled legal comments and added deterministic license, runtime,
+  and CycloneDX materials to acceptance-candidate archives.
 
 ## 0.1.0 - 2026-08-12
 

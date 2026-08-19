@@ -14,13 +14,14 @@ pnpm --filter @sumi-os/docs-web verify:release
 pnpm run verify:integration
 ```
 
-手动 `Acceptance candidate` 工作流只接受 private `main` 的最新完整 40 位提交 SHA。
+手动 `Acceptance candidate` 工作流只接受 `main` 的最新完整 40 位提交 SHA。
 它在没有 OIDC 或 attestation 权限的 job 中运行发布套件，并上传静态归档、SHA-256
-校验和与原始性能证据；它不会部署站点。
+校验和、原始性能证据、项目与运行时许可证、第三方声明和 CycloneDX 组件清单；它不会
+部署站点。
 
-来源证明由独立的受保护 job 生成。只有仓库变量 `ENABLE_PRIVATE_ATTESTATION` 为
-`true`，且 `candidate-attestation` environment 已存在并受到保护时才会运行。若私有
-仓库套餐无法落实该边界，应保持变量未设置；跳过来源证明是未关闭的发布门，不是成功。
+来源证明由独立的受保护 job 生成。只有仓库变量 `ENABLE_ATTESTATION` 为 `true`，且
+`candidate-attestation` environment 已存在并受到保护时才会运行。若仓库无法落实该
+边界，应保持变量未设置；跳过来源证明是未关闭的发布门，不是成功。
 
 人工验收必须覆盖两种语言、所有主题模式、规范 URL、机器清单、原始文档、OpenAPI、
 所有映射页面和 MCP 跨项目验证。提升前记录已接受的提交、工作流运行、源地址、

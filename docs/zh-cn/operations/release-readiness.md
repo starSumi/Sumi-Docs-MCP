@@ -1,6 +1,6 @@
 ---
 title: 发布就绪清单
-description: 私有候选、人工验收和公开提升的阻断检查。
+description: 验收候选、人工评审和产品提升的阻断检查。
 ---
 
 # 发布就绪清单
@@ -16,7 +16,7 @@ description: 私有候选、人工验收和公开提升的阻断检查。
 - [ ] 英文与简体中文 catalog variant 完整。
 - [ ] MCP 数据面没有引入客户端/session 状态或源文件写入。
 
-## 私有候选
+## 验收候选
 
 - [ ] 精确路径暂存已排除本地 session、log、credential、cache 和生成物。
 - [ ] 依赖 lock host 策略与官方 registry audit 通过。
@@ -24,7 +24,7 @@ description: 私有候选、人工验收和公开提升的阻断检查。
 - [ ] 重复代码门保持在已评审的仓库阈值以内。
 - [ ] Node.js 25.5 或更高版本上的根 verify、跨产品集成、MCP smoke 和 package 预览通过。
 - [ ] 候选构建不具备 OIDC 或 attestation 写权限。
-- [ ] 候选源是最新私有 `main` commit，并在提升前再次确认未过期。
+- [ ] 候选源是最新受保护的 `main` commit，并在提升前再次确认未过期。
 - [ ] 已保存不可变 Web/MCP artifact、摘要、来源和原始性能证据。
 - [ ] 签名或冷启动失败保持阻断，不能改写成成功。
 
@@ -35,7 +35,7 @@ description: 私有候选、人工验收和公开提升的阻断检查。
 - [ ] 每个例外都有范围、风险负责人、到期时间和回滚。
 - [ ] 负责人针对一个精确 commit 与 artifact 摘要集合记录接受或拒绝。
 
-## 公开提升
+## 产品提升
 
 - [ ] 所有保留 refs 的 Git author、committer、tagger 元数据满足公开隐私策略。
 - [ ] 若选择历史重写，已在一次性 clone 排演并验证，再使用 lease 保护推送。
@@ -43,4 +43,4 @@ description: 私有候选、人工验收和公开提升的阻断检查。
 - [ ] 接受的 commit 未发生源码变化，直接创建 tag 并发布。
 - [ ] Release、package、site 和 binary checksum 已读回，回滚仍可用。
 
-私有可见性不是发布就绪的替代品。它只是暴露边界，让项目在公开使用前关闭剩余门禁。
+公开源码不等于产品发布。Tag、package、部署和生产二进制文件仍须通过各自的发布门禁。

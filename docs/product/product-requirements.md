@@ -5,9 +5,8 @@ description: Product scope, user outcomes, non-goals, and release acceptance for
 
 # Product requirements
 
-This document is the Product Requirements Document (PRD) for Sumi Docs. The
-ambiguous acronym PDR is not used as a second source of requirements. Design
-decisions belong in ADRs; delivery evidence belongs in checkpoints and CI.
+This document defines the product requirements for Sumi Docs. Design decisions
+belong in ADRs; delivery evidence belongs in checkpoints and CI.
 
 ## Product promise
 
@@ -24,7 +23,7 @@ projection. Neither consumer may silently observe a partially published corpus.
 | Agent           | Discover, search, and fetch the same reviewed corpus through strict MCP tools without requiring a Skill.                                 |
 | Project adopter | Start from a repository `docs/` directory or an explicit configuration without product state colliding with `.sumi` or host directories. |
 | Maintainer      | Change source, contract, Web projection, and MCP consumer atomically and reproduce every candidate from a commit.                        |
-| Release owner   | Review immutable evidence and explicitly accept or reject a private candidate before any public action.                                  |
+| Release owner   | Review immutable evidence and explicitly accept or reject a candidate before product promotion.                                          |
 
 ## Required scope
 

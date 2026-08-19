@@ -20,6 +20,6 @@ test("package boundary includes every active architecture decision", async () =>
   );
   assert.equal(
     packageJson.scripts?.["audit:prod"],
-    "pnpm audit --prod --audit-level high --registry https://registry.npmjs.org",
+    "node ../../scripts/run-pnpm-command.mjs audit --prod --audit-level high --registry https://registry.npmjs.org",
   );
 });

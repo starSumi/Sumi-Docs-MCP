@@ -20,7 +20,7 @@ or a second package manager would recover its operational cost.
 
 ## Decision
 
-Create one private product repository with this ownership layout:
+Create one product repository with this ownership layout:
 
 ```text
 apps/web/                   # Astro and Starlight human surface and publisher
@@ -39,10 +39,9 @@ pure validation only. It must not contain Astro rendering, trusted MDX
 execution, MCP transport, filesystem acquisition, or the MCP parser. Sharing a
 repository does not merge the Web and MCP trust boundaries.
 
-Preserve both existing Git histories when importing them. The existing private
-repositories remain available and unarchived during migration and human
-acceptance. Archival, redirects, tags, or public release require a later explicit
-acceptance step.
+Preserve both existing Git histories when importing them. The predecessor
+repositories remain private recovery sources until their role is explicitly
+retired. Source visibility does not promote a tag, package, site, or binary.
 
 Do not introduce Turborepo, Bazel, or Nix for this migration. Reconsider a task
 runner when measured CI scheduling or cache duplication is material. Consider
@@ -64,5 +63,6 @@ lock, while artifact release decisions remain separate.
 Migration is accepted only when imported history is visible, both package
 builds pass from a clean root install, package-local commands still work,
 v1/v2 conformance runs without sibling paths, npm package boundaries are
-unchanged, and the website preview serves the full product corpus. Until human
-acceptance, rollback is continued use of the two unchanged private repositories.
+unchanged, and the website preview serves the full product corpus. After human
+acceptance, source changes roll back through a protected-branch revert; the two
+unchanged predecessor repositories remain recovery-only sources until retired.

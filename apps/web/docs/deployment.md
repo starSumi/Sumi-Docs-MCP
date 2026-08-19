@@ -7,7 +7,7 @@ candidates but does not select or configure a hosting provider.
 
 - Restore or configure the repository's authoritative GitHub remote.
 - Protect the default branch and require both `CI` operating-system jobs.
-- Enable private vulnerability reporting or publish a private security contact.
+- Enable private vulnerability reporting.
 - Select the public HTTPS origin. Subpath deployment is not supported by the
   current Astro configuration.
 - Configure the hosting environment separately from local `.env` files.
@@ -24,8 +24,8 @@ The workflow emits:
 
 - `sumi-docs-web-<commit>.zip` and `sumi-docs-mcp-<commit>.zip`;
 - SHA-256 checksums and raw cold-start evidence; and
-- protected GitHub provenance only when the private repository plan and the
-  root `candidate-attestation` environment support it.
+- protected GitHub provenance only when the repository and the root
+  `candidate-attestation` environment enforce that boundary.
 
 It does not deploy or modify repository contents. A skipped attestation remains
 an open release gate.
