@@ -7,8 +7,9 @@ ENV PATH=$PNPM_HOME:$PATH
 
 WORKDIR /workspace
 
-RUN corepack enable \
-    && corepack prepare pnpm@10.26.0 --activate \
+RUN npm install --global --ignore-scripts \
+      --registry https://registry.npmjs.org \
+      pnpm@10.26.0 \
     && pnpm --version
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
