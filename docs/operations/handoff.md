@@ -18,9 +18,9 @@ Use this sequence at the start of a new maintenance session:
 7. Treat local passing output as provisional until it is rerun for one clean
    candidate commit and read back from the origin CI run.
 
-Then read the [product requirements](../product/product-requirements.md),
-[checkpoint protocol](checkpoints.md), [release checklist](release-readiness.md),
-and [evaluation matrix](evaluation-matrix.md). These define the route; live Git
+Then read the [product requirements](../../product/product-requirements/),
+[checkpoint protocol](../checkpoints/), [release checklist](../release-readiness/),
+and [evaluation matrix](../evaluation-matrix/). These define the route; live Git
 and CI evidence determines the current state.
 
 ## State placement

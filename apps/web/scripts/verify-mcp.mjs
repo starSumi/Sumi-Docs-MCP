@@ -5,8 +5,10 @@ import { access, readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, resolve, sep } from "node:path";
 import { createInterface } from "node:readline";
+import { normalizeSiteBasePath } from "../src/site-config.ts";
 
 const outputRoot = resolve("dist");
+const basePath = normalizeSiteBasePath(process.env.BASE_PATH);
 const mcpEntry = resolve("..", "..", "packages", "mcp", "dist", "index.js");
 await access(mcpEntry);
 const projectedManifest = JSON.parse(
@@ -29,7 +31,19 @@ const contentTypes = new Map([
 const staticServer = createServer(async (request, response) => {
   try {
     const url = new URL(request.url ?? "/", "http://127.0.0.1");
-    let relativePath = decodeURIComponent(url.pathname).replace(/^\/+/, "");
+    const decodedPath = decodeURIComponent(url.pathname);
+    if (
+      basePath !== "/" &&
+      decodedPath !== basePath.slice(0, -1) &&
+      !decodedPath.startsWith(basePath)
+    ) {
+      response.writeHead(404).end();
+      return;
+    }
+    let relativePath =
+      basePath === "/"
+        ? decodedPath.replace(/^\/+/, "")
+        : decodedPath.slice(basePath.length).replace(/^\/+/, "");
     if (relativePath === "" || relativePath.endsWith("/"))
       relativePath += "index.html";
     const candidate = resolve(outputRoot, ...relativePath.split("/"));
@@ -60,7 +74,9 @@ await new Promise((resolveListen, rejectListen) => {
 });
 const address = staticServer.address();
 assert(address && typeof address === "object");
-const baseUrl = `http://127.0.0.1:${address.port}/`;
+const baseUrl = `http://127.0.0.1:${address.port}${basePath}`;
+const pageUrl = (route) =>
+  new URL(route === "/" ? "" : route.replace(/^\/+/, ""), baseUrl).href;
 const meta = {
   "io.modelcontextprotocol/protocolVersion": "2026-07-28",
   "io.modelcontextprotocol/clientInfo": {
@@ -314,7 +330,7 @@ try {
       },
       `v1 and v2 MCP results differ for '${path}'`,
     );
-    const expectedPage = new URL(routeMap.routes[path], baseUrl).href;
+    const expectedPage = pageUrl(routeMap.routes[path]);
     const actualPage = new URL(fetched.url);
     const normalizedActualPage = actualPage.pathname.endsWith("/")
       ? actualPage.href
@@ -322,7 +338,7 @@ try {
     assert.equal(normalizedActualPage, expectedPage);
   }
   for (const document of listed) {
-    const expectedPage = new URL(routeMap.routes[document.path], baseUrl).href;
+    const expectedPage = pageUrl(routeMap.routes[document.path]);
     const actualPage = new URL(document.url);
     const normalizedActualPage = actualPage.pathname.endsWith("/")
       ? actualPage.href

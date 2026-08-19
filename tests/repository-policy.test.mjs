@@ -665,6 +665,13 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   weakened.ci.jobs.verify.steps = weakened.ci.jobs.verify.steps.filter(
     (step) => step.name !== "Install the pinned package manager",
   );
+  weakened.pages.jobs.build.steps.find(
+    (step) => step.name === "Build and verify site",
+  ).env.BASE_PATH = "/unreviewed/";
+  weakened.pages.jobs.build.steps.find(
+    (step) => step.name === "Upload verified Pages artifact",
+  ).with.path = ".";
+  weakened.pages.jobs.deploy.permissions.contents = "write";
   const errors = validateWorkflowPolicy(weakened);
   assert.ok(errors.some((error) => error.includes("permissions")));
   assert.ok(errors.some((error) => error.includes("cancelled or superseded")));
@@ -674,6 +681,9 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   assert.ok(errors.some((error) => error.includes("compliance material")));
   assert.ok(errors.some((error) => error.includes("built SEA binary")));
   assert.ok(errors.some((error) => error.includes("pinned pnpm")));
+  assert.ok(errors.some((error) => error.includes("configured origin/base")));
+  assert.ok(errors.some((error) => error.includes("verified Web artifact")));
+  assert.ok(errors.some((error) => error.includes("deployment authority")));
 });
 
 test("candidate cold-start evidence command rejects weakened or custom baselines", () => {

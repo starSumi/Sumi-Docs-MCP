@@ -18,7 +18,7 @@ node packages/mcp/dist/index.js serve
 ```
 
 The tracked project config selects root `docs/`. The process then waits for
-JSON-RPC input from an MCP client. See [Agent host integration](/agent-hosts/)
+JSON-RPC input from an MCP client. See [Agent host integration](../agent-hosts/)
 for the checked-in Codex, Claude Code, and VS Code adapters.
 
 To serve another local Markdown or MDX corpus, pass its directory explicitly:

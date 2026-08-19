@@ -18,7 +18,7 @@ node packages/mcp/dist/index.js serve
 ```
 
 受版本控制的项目配置选择根 `docs/`。进程随后等待 MCP 客户端通过 JSON-RPC 调用。
-仓库内 Codex、Claude Code 和 VS Code adapter 见[Agent 宿主集成](/zh-cn/agent-hosts/)。
+仓库内 Codex、Claude Code 和 VS Code adapter 见[Agent 宿主集成](../agent-hosts/)。
 
 若要读取另一份本地 Markdown 或 MDX 语料，请显式传入目录：
 

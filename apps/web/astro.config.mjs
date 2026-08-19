@@ -7,12 +7,20 @@ import { catalogSidebar, contentCatalog } from "./src/content-catalog.ts";
 import { contentRoot } from "./src/content-root.ts";
 import { canonicalTypeDocRoutes } from "./src/typedoc-routes.ts";
 import sumiBrowserComponents from "./integrations/sumi-browser-components.mjs";
+import {
+  normalizeSiteBasePath,
+  normalizeSiteOrigin,
+} from "./src/site-config.ts";
 
-const site = process.env.SITE_URL || "http://127.0.0.1:4321";
+const site = process.env.SITE_URL
+  ? normalizeSiteOrigin(process.env.SITE_URL)
+  : "http://127.0.0.1:4321";
+const base = normalizeSiteBasePath(process.env.BASE_PATH);
 const portableFilePath = (url) => fileURLToPath(url).replaceAll("\\", "/");
 
 export default defineConfig({
   site,
+  base,
   vite: {
     plugins: [sumiBrowserComponents()],
   },

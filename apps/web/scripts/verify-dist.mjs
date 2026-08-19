@@ -11,8 +11,17 @@ import {
   contentCatalog,
 } from "../src/content-catalog.ts";
 import { contentRoot } from "../src/content-root.ts";
+import {
+  normalizeSiteBasePath,
+  prefixSiteRoute,
+  resolveSiteDeployment,
+} from "../src/site-config.ts";
 
 const outputRoot = resolve("dist");
+const basePath = normalizeSiteBasePath(process.env.BASE_PATH);
+const publicBaseUrl = process.env.SITE_URL
+  ? resolveSiteDeployment(process.env.SITE_URL, basePath).publicBaseUrl
+  : new URL(basePath, "http://127.0.0.1:4321/").href;
 const machineRoot = resolve(outputRoot, "_mcp");
 const manifest = JSON.parse(
   await readFile(resolve(machineRoot, "sumi-docs-manifest.json"), "utf8"),
@@ -148,6 +157,19 @@ assert.deepEqual(chineseDocuments, englishDocuments);
 
 const pageFile = (page) =>
   page === "/" ? "index.html" : `${page.slice(1)}index.html`;
+const deployedRoute = (route) => prefixSiteRoute(route, basePath);
+const logicalRoute = (deployedPath) => {
+  if (basePath === "/") return deployedPath;
+  const baseWithoutTrailingSlash = basePath.slice(0, -1);
+  assert.ok(
+    deployedPath === baseWithoutTrailingSlash ||
+      deployedPath.startsWith(basePath),
+    `Root-absolute reference escapes BASE_PATH: '${deployedPath}'`,
+  );
+  return deployedPath === baseWithoutTrailingSlash
+    ? "/"
+    : `/${deployedPath.slice(basePath.length)}`;
+};
 const outputFiles = new Set(await discoverFiles(outputRoot));
 
 for (const document of manifest.documents) {
@@ -240,11 +262,17 @@ for (const file of apiHtmlFiles) {
   const html = await readFile(resolve(outputRoot, ...file.split("/")), "utf8");
   for (const match of html.matchAll(/\shref="([^"]+)"/gu)) {
     const href = match[1].split(/[?#]/u, 1)[0];
-    if (!/^\/(?:zh-cn\/)?reference\/api\/corpus-contract\//u.test(href)) {
+    const logicalHref = href.startsWith("/") ? logicalRoute(href) : href;
+    if (
+      !/^\/(?:zh-cn\/)?reference\/api\/corpus-contract\//u.test(logicalHref)
+    ) {
       continue;
     }
-    assert.ok(href.endsWith("/"), `API link is not canonical: '${href}'`);
-    const target = pageFile(decodeURIComponent(href));
+    assert.ok(
+      logicalHref.endsWith("/"),
+      `API link is not canonical: '${href}'`,
+    );
+    const target = pageFile(decodeURIComponent(logicalHref));
     assert.ok(
       outputFiles.has(target),
       `API link '${href}' from '${file}' has no exact-case output file`,
@@ -252,16 +280,74 @@ for (const file of apiHtmlFiles) {
   }
 }
 
+for (const file of [...outputFiles].filter((path) => path.endsWith(".html"))) {
+  const html = await readFile(resolve(outputRoot, ...file.split("/")), "utf8");
+  const canonical = html.match(
+    /<link[^>]+rel="canonical"[^>]+href="([^"]+)"/u,
+  )?.[1];
+  assert.ok(canonical, `Rendered page has no canonical URL: '${file}'`);
+  assert.ok(
+    canonical.startsWith(publicBaseUrl),
+    `Canonical URL escapes the public site base: '${canonical}'`,
+  );
+
+  for (const match of html.matchAll(/\s(?:href|src)="([^"]+)"/gu)) {
+    const reference = match[1];
+    if (/^(?:data|javascript|mailto|tel):/u.test(reference)) continue;
+    const pageRoute =
+      file === "index.html"
+        ? "/"
+        : file.endsWith("/index.html")
+          ? `/${file.slice(0, -"index.html".length)}`
+          : `/${file}`;
+    const resolvedReference = new URL(
+      reference,
+      new URL(deployedRoute(pageRoute), publicBaseUrl),
+    );
+    if (resolvedReference.origin !== new URL(publicBaseUrl).origin) continue;
+    const logicalReference = decodeURIComponent(
+      logicalRoute(resolvedReference.pathname),
+    );
+    const directTarget = logicalReference.slice(1);
+    const targets = logicalReference.endsWith("/")
+      ? [pageFile(logicalReference), `${directTarget.slice(0, -1)}.html`]
+      : [directTarget, `${directTarget}/index.html`];
+    if (file === "404.html" && logicalReference.endsWith("/404/")) {
+      targets.push("404.html");
+    }
+    assert.ok(
+      targets.some((target) => outputFiles.has(target)),
+      `Local reference '${reference}' from '${file}' has no exact-case output file`,
+    );
+  }
+}
+
+for (const sitemap of [...outputFiles].filter((path) =>
+  /(?:^|\/)sitemap[^/]*\.xml$/u.test(path),
+)) {
+  const xml = await readFile(
+    resolve(outputRoot, ...sitemap.split("/")),
+    "utf8",
+  );
+  for (const [, location] of xml.matchAll(/<loc>([^<]+)<\/loc>/gu)) {
+    assert.ok(
+      location.startsWith(publicBaseUrl),
+      `Sitemap URL escapes the public site base: '${location}'`,
+    );
+  }
+}
+
 assert.match(englishHome, /<main[^>]+lang="en"/);
-assert.match(englishHome, /href="\/getting-started\/"/);
+assert.match(englishHome, /href="getting-started\/"/);
+assert.match(englishHome, /href="configuration\/"/);
 assert.match(
   englishHome,
   /href="https:\/\/github\.com\/starSumi\/Sumi-Docs-MCP"/,
 );
 assert.match(chineseHome, /<main[^>]+lang="zh-CN"/);
 assert.match(chineseHome, />Sumi 文档<\/h1>/);
-assert.match(chineseHome, /href="\/zh-cn\/getting-started\/"/);
-assert.match(chineseHome, /href="\/zh-cn\/configuration\/"/);
+assert.match(chineseHome, /href="getting-started\/"/);
+assert.match(chineseHome, /href="configuration\/"/);
 assert.match(
   chineseHome,
   /href="https:\/\/github\.com\/starSumi\/Sumi-Docs-MCP"/,
@@ -286,9 +372,9 @@ for (const document of englishDocuments) {
   );
 
   assert.match(englishPage, /<main[^>]+lang="en"/);
-  assert.ok(englishPage.includes(`value="${chineseRoute}"`));
+  assert.ok(englishPage.includes(`value="${deployedRoute(chineseRoute)}"`));
   assert.match(chinesePage, /<main[^>]+lang="zh-CN"/);
-  assert.ok(chinesePage.includes(`value="${englishRoute}"`));
+  assert.ok(chinesePage.includes(`value="${deployedRoute(englishRoute)}"`));
 }
 
 console.log(

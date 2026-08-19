@@ -21,6 +21,8 @@ This file records user-visible changes. Internal phase notes are retained under
   the executable digest, raw measurements, and p95 latency.
 - Preserved bundled legal comments and added deterministic license, runtime,
   and CycloneDX materials to acceptance-candidate archives.
+- Preserved deployment subpaths when explicit manifest routes are combined with
+  `--base-url`.
 
 ## 0.1.0 - 2026-08-12
 
