@@ -364,7 +364,9 @@ export function validateWorkflowPolicy({
     );
   }
   if (
+    !String(pagesFreshness?.if ?? "").includes("success()") ||
     !String(pagesFreshness?.if ?? "").includes("!cancelled()") ||
+    !String(uploadPages?.if ?? "").includes("success()") ||
     !String(uploadPages?.if ?? "").includes("!cancelled()") ||
     !String(uploadPages?.if ?? "").includes("freshness.outputs.current") ||
     uploadPages?.with?.path !== "apps/web/dist"
@@ -379,6 +381,7 @@ export function validateWorkflowPolicy({
     pagesDeploy?.environment?.url !==
       "${{ steps.deployment.outputs.page_url }}" ||
     !String(pagesDeploy?.if ?? "").includes("refs/heads/main") ||
+    !String(pagesDeploy?.if ?? "").includes("success()") ||
     !String(pagesDeploy?.if ?? "").includes("!cancelled()") ||
     !sameKeys(pagesDeploy?.permissions, ["contents", "id-token", "pages"]) ||
     pagesDeploy.permissions.contents !== "read" ||
