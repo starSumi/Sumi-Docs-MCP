@@ -40,8 +40,8 @@ supports them.
 
 Publishing source does not approve a product release. Do not create a release
 tag, npm publication, deployed documentation site, or GitHub Release until the
-documented human acceptance gate passes. The open SEA cold-start limit remains a
-release blocker unless it is fixed or receives a recorded exception.
+documented human acceptance gate passes. The calibrated SEA cold-start policy in
+ADR-0011 remains a release blocker until a current report passes.
 
 ## Consequences
 

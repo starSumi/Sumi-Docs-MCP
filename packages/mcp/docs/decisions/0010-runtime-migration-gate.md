@@ -3,14 +3,15 @@
 - Status: Accepted
 - Date: 2026-08-17
 - Owners: Sumi Docs maintainers
+- Performance criteria amended by: ADR-0011
 
 ## Context
 
-The Node.js SEA has historically missed the 100 ms cold-start hard limit. That
-is a release blocker, not proof that Markdown parsing or the entire product must
-move to Rust. Corpus parsing is already delayed until the first content call, so
-the remaining cost may be process, SDK, module loading, bundling, or measurement
-overhead.
+The Node.js SEA historically missed the former 100 ms cold-start hard limit.
+That result was not proof that Markdown parsing or the entire product had to
+move to Rust. Corpus parsing is delayed until the first content call, so startup
+cost includes process, SDK, module loading, bundling, and measurement overhead.
+ADR-0011 now defines the calibrated release policy.
 
 Rust has an official MCP SDK with stdio support, but changing runtimes risks
 different Markdown, MDX, frontmatter, Unicode, error, and packaging behavior.
@@ -29,8 +30,8 @@ conformance suites.
 
 Promote Rust only when all conditions hold:
 
-- optimized Node p95 remains above 100 ms on two representative Windows
-  machines;
+- calibrated Node results on two representative Windows machines show a
+  material product-owned performance gap that cannot be removed safely;
 - Rust p95 is at most 75 ms or at least 40 percent faster;
 - protocol, corpus, security, and result-shape parity are complete;
 - Windows build, signing, SBOM, provenance, rollback, and a maintenance owner

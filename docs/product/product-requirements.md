@@ -56,10 +56,13 @@ must remain compatible, v2 must be canonical and tamper-evident, and failures
 must preserve the last accepted revision. Security gates cover paths, secrets,
 dependency provenance, workflow permissions, and package boundaries.
 
-The Node.js SEA target is less than 50 ms to the first `tools/list` response,
-with 100 ms as the blocking limit. It remains failed until a current 30-run
-measurement proves otherwise. Signing and public-release privacy are also
-blocking unless the owner records an explicit exception.
+Cold-start acceptance follows ADR-0011. A release run interleaves 100 starts of
+the product, an empty official-SDK server, and a raw SEA measurement baseline.
+The product must have zero errors and timeouts, median at most 200 ms, p95 at
+most 350 ms, median no more than 35 ms and 1.30 times above the SDK baseline,
+and p95 no more than 75 ms above it. P99 and maximum are diagnostic. Signing and
+public-release privacy are also blocking unless the owner records an explicit
+exception.
 
 ## Release definition
 

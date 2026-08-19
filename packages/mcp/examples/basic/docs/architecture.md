@@ -12,6 +12,7 @@
 - [ADR-0008: Unify the product in a pnpm workspace](decisions/0008-product-workspace-topology.md)
 - [ADR-0009: Keep reconciliation state outside the MCP data plane](decisions/0009-reconciliation-and-control-plane-state.md)
 - [ADR-0010: Keep Node.js until a Rust spike passes a parity gate](decisions/0010-runtime-migration-gate.md)
+- [ADR-0011: Calibrate cold-start performance against the supported SDK](decisions/0011-calibrated-cold-start-policy.md)
 
 ## Request path
 
