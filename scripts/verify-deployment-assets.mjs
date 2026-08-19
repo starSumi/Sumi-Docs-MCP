@@ -95,8 +95,10 @@ function validateDockerAssets(errors) {
     errors,
   );
   requireCondition(
-    dockerfile.includes("corepack prepare pnpm@10.26.0 --activate"),
-    "Dockerfile.mcp must activate pnpm 10.26.0.",
+    dockerfile.includes("npm install --global --ignore-scripts") &&
+      dockerfile.includes("--registry https://registry.npmjs.org") &&
+      dockerfile.includes("pnpm@10.26.0"),
+    "Dockerfile.mcp must install pnpm 10.26.0 from the approved registry without lifecycle scripts.",
     errors,
   );
   requireCondition(
