@@ -10,6 +10,7 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
+import { createRequire } from "node:module";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -43,21 +44,7 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 `;
 
-const reviewedLicenseOverrides = new Map(
-  ["pagefind@1.5.2", "@pagefind/default-ui@1.5.2"].map((identity) => [
-    identity,
-    {
-      license: "MIT",
-      source: "https://github.com/Pagefind/pagefind/blob/v1.5.2/LICENSE",
-      sha256:
-        "4736929bfded122bd969f0621a0d917484b126d981270d68a63ed42cb55503d5",
-      text: pagefindLicenseText,
-    },
-  ]),
-);
-
-const standardLicenseTexts = {
-  MIT: `MIT License
+const mitLicenseText = `MIT License
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -75,25 +62,51 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.`,
-  ISC: `ISC License
+SOFTWARE.`;
 
-Permission to use, copy, modify, and/or distribute this software for any
-purpose with or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH
-REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY
-AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT,
-INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
-LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
-OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
-PERFORMANCE OF THIS SOFTWARE.`,
-};
-
-if (!packageManagerCli || !existsSync(packageManagerCli)) {
-  throw new Error("Run this command through the pinned pnpm package script.");
-}
+export const reviewedLicenseOverrides = new Map([
+  ...["pagefind@1.5.2", "@pagefind/default-ui@1.5.2"].map((identity) => [
+    identity,
+    {
+      license: "MIT",
+      source: "https://github.com/Pagefind/pagefind/blob/v1.5.2/LICENSE",
+      sha256:
+        "4736929bfded122bd969f0621a0d917484b126d981270d68a63ed42cb55503d5",
+      text: pagefindLicenseText,
+      evidence: [],
+    },
+  ]),
+  [
+    "format@0.2.2",
+    {
+      license: "MIT",
+      source:
+        "https://registry.npmjs.org/format/-/format-0.2.2.tgz (package metadata and source attribution)",
+      sha256:
+        "1847e0e0698142ed4347c1441a9fa81c8fbddd44b1d8bbcd5e3647f991759d7f",
+      text: mitLicenseText,
+      evidence: [
+        {
+          file: "package.json",
+          sha256:
+            "0754698e3180d26da07fa0ca1fbfce331c0e1652db512aee35b443204bdec553",
+        },
+        {
+          file: "format.js",
+          sha256:
+            "666bd4da85e596b4e3e119f201ea5c69dae64e2e9f75a5758de777b9550a6155",
+          attribution: "Copyright 2010 - 2013 Sami Samhuri <sami@samhuri.net>",
+        },
+        {
+          file: "Readme.md",
+          sha256:
+            "e078ab4217332db9ac446cdf23e932eabd21d6db7c239a6495df4d3802251f20",
+          attribution: "Copyright 2010 - 2014 Sami Samhuri sami@samhuri.net",
+        },
+      ],
+    },
+  ],
+]);
 
 function readManifest(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -103,7 +116,10 @@ function sha256(content) {
   return createHash("sha256").update(content).digest("hex");
 }
 
-function loadLicenseInventory(packageName) {
+export function loadLicenseInventory(packageName) {
+  if (!packageManagerCli || !existsSync(packageManagerCli)) {
+    throw new Error("Run this command through the pinned pnpm package script.");
+  }
   const result = spawnSync(
     process.execPath,
     [
@@ -182,7 +198,7 @@ function packageIdentityForInput(input) {
   }
 }
 
-function loadMcpArtifact(inventory) {
+export function loadMcpArtifact(inventory) {
   const manifestPath = join(projectRoot, "packages", "mcp", "package.json");
   const manifest = readManifest(manifestPath);
   const rootIdentity = `${manifest.name}@${manifest.version}`;
@@ -232,7 +248,7 @@ function singleIdentityForName(inventory, name) {
   return matches[0].identity;
 }
 
-function loadWebArtifact(inventory) {
+export function loadWebArtifact(inventory) {
   const manifestPath = join(projectRoot, "apps", "web", "package.json");
   const manifest = readManifest(manifestPath);
   const emitted = readManifest(browserManifestPath);
@@ -285,35 +301,47 @@ function loadWebArtifact(inventory) {
   };
 }
 
-const licenseFilePattern = /^(?:licen[cs]e|copying|notice)(?:[._-]|$)/iu;
-const noticeSourcePattern =
-  /^(?:readme(?:[._-]|$)|.*\.(?:[cm]?[jt]s|md|txt))$/iu;
+const licenseTextFilePattern = /^(?:licen[cs]e|copying)(?:[._-]|$)/iu;
+const supplementalNoticeFilePattern = /^notice(?:[._-]|$)/iu;
 
-function packageAttribution(component) {
-  const copyrightLines = new Set();
-  for (const file of readdirSync(component.path)
-    .filter((name) => noticeSourcePattern.test(name))
-    .sort((left, right) => left.localeCompare(right))) {
-    const path = join(component.path, file);
-    const stats = statSync(path);
-    if (!stats.isFile() || stats.size > 1024 * 1024) continue;
-    const content = readFileSync(path, "utf8");
-    for (const match of content.matchAll(/^.*copyright.*$/gimu)) {
-      const line = match[0]
-        .replace(/^\s*(?:\/\/|\/\*+|\*|#)\s*/u, "")
-        .replace(/\s*\*\/\s*$/u, "")
-        .trim();
-      if (line.length > 0 && line.length <= 300) copyrightLines.add(line);
-    }
-  }
-  return [...copyrightLines].sort((left, right) => left.localeCompare(right));
+function evidenceFiles(component, pattern) {
+  return readdirSync(component.path)
+    .filter((name) => pattern.test(name))
+    .filter((name) => statSync(join(component.path, name)).isFile())
+    .map((name) => ({
+      name,
+      content: readFileSync(join(component.path, name), "utf8"),
+    }))
+    .filter(({ content }) => content.trim().length > 0)
+    .sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function noticeSection(component, artifactRole) {
-  const files = readdirSync(component.path)
-    .filter((name) => licenseFilePattern.test(name))
-    .filter((name) => statSync(join(component.path, name)).isFile())
-    .sort((left, right) => left.localeCompare(right));
+function verifyOverrideEvidence(component, override) {
+  for (const evidence of override.evidence ?? []) {
+    if (!/^[^/\\]+$/u.test(evidence.file)) {
+      throw new Error(
+        `Reviewed license evidence path is invalid for ${component.identity}.`,
+      );
+    }
+    const content = readFileSync(join(component.path, evidence.file));
+    if (sha256(content) !== evidence.sha256) {
+      throw new Error(
+        `Reviewed license evidence drifted for ${component.identity}: ${evidence.file}.`,
+      );
+    }
+  }
+}
+
+export function noticeSection(
+  component,
+  artifactRole,
+  overrides = reviewedLicenseOverrides,
+) {
+  const licenseFiles = evidenceFiles(component, licenseTextFilePattern);
+  const supplementalNotices = evidenceFiles(
+    component,
+    supplementalNoticeFilePattern,
+  );
   const lines = [
     component.identity,
     `Declared license: ${component.license}`,
@@ -321,18 +349,30 @@ function noticeSection(component, artifactRole) {
   ];
   if (component.homepage) lines.push(`Homepage: ${component.homepage}`);
 
-  if (files.length > 0) {
-    for (const file of files) {
+  if (licenseFiles.length > 0) {
+    lines.push("License evidence: package-file");
+    for (const { name, content } of licenseFiles) {
       lines.push(
+        `License source: ${name}`,
+        `License source SHA-256: ${sha256(content)}`,
         "",
-        `----- ${file} -----`,
-        readFileSync(join(component.path, file), "utf8").trim(),
+        `----- ${name} -----`,
+        content.trim(),
+      );
+    }
+    for (const { name, content } of supplementalNotices) {
+      lines.push(
+        `Supplemental notice source: ${name}`,
+        `Supplemental notice SHA-256: ${sha256(content)}`,
+        "",
+        `----- ${name} -----`,
+        content.trim(),
       );
     }
     return lines.join("\n");
   }
 
-  const override = reviewedLicenseOverrides.get(component.identity);
+  const override = overrides.get(component.identity);
   if (override) {
     if (
       override.license !== component.license ||
@@ -342,25 +382,37 @@ function noticeSection(component, artifactRole) {
         `Reviewed license override drifted for ${component.identity}.`,
       );
     }
+    verifyOverrideEvidence(component, override);
     lines.push(
+      "License evidence: reviewed-override",
       `Reviewed license source: ${override.source}`,
       `Reviewed license SHA-256: ${override.sha256}`,
-      "",
-      override.text.trim(),
     );
+    for (const evidence of override.evidence ?? []) {
+      lines.push(
+        `Reviewed evidence file: ${evidence.file}`,
+        `Reviewed evidence SHA-256: ${evidence.sha256}`,
+      );
+      if (evidence.attribution) {
+        lines.push(`Reviewed attribution: ${evidence.attribution}`);
+      }
+    }
+    lines.push("", override.text.trim());
+    for (const { name, content } of supplementalNotices) {
+      lines.push(
+        `Supplemental notice source: ${name}`,
+        `Supplemental notice SHA-256: ${sha256(content)}`,
+        "",
+        `----- ${name} -----`,
+        content.trim(),
+      );
+    }
     return lines.join("\n");
   }
 
-  const standardText = standardLicenseTexts[component.license];
-  const attribution = packageAttribution(component);
-  if (!standardText || attribution.length === 0) {
-    throw new Error(
-      `No complete reviewed license notice is available for ${component.identity} (${component.license}).`,
-    );
-  }
-  if (component.author) lines.push(`Package author: ${component.author}`);
-  lines.push(...attribution, "", standardText);
-  return lines.join("\n");
+  throw new Error(
+    `No non-empty license file or exact reviewed override is available for ${component.identity} (${component.license}).`,
+  );
 }
 
 function npmPurl(name, version) {
@@ -371,42 +423,162 @@ function npmPurl(name, version) {
   return `pkg:npm/${name}@${version}`;
 }
 
-function dependencyIdentity(componentPath, dependencyName) {
-  for (const dependencyRoot of [
-    join(componentPath, "node_modules"),
-    dirname(componentPath),
-  ]) {
+function packageEntryForResolvedPath(resolvedPath, dependencyName) {
+  let cursor = dirname(resolvedPath);
+  for (;;) {
     try {
-      const manifest = readManifest(
-        join(dependencyRoot, ...dependencyName.split("/"), "package.json"),
-      );
-      return `${manifest.name}@${manifest.version}`;
+      const manifest = readManifest(join(cursor, "package.json"));
+      if (manifest.name === dependencyName && manifest.version) {
+        return {
+          identity: `${manifest.name}@${manifest.version}`,
+          manifest,
+          path: cursor,
+        };
+      }
     } catch {
-      // Try the next package-manager layout.
+      // Continue to the enclosing package boundary.
+    }
+    const parent = dirname(cursor);
+    if (parent === cursor) return undefined;
+    cursor = parent;
+  }
+}
+
+export function resolveDependencyEntry(componentPath, dependencyName) {
+  let cursor = componentPath;
+  for (;;) {
+    const installedManifestPath = join(
+      cursor,
+      "node_modules",
+      dependencyName,
+      "package.json",
+    );
+    try {
+      const manifest = readManifest(installedManifestPath);
+      if (manifest.name === dependencyName && manifest.version) {
+        return {
+          identity: `${manifest.name}@${manifest.version}`,
+          manifest,
+          path: dirname(installedManifestPath),
+        };
+      }
+    } catch {
+      // Continue through Node's ancestor node_modules search order.
+    }
+    const parent = dirname(cursor);
+    if (parent === cursor) break;
+    cursor = parent;
+  }
+
+  const requireFromComponent = createRequire(
+    join(componentPath, "package.json"),
+  );
+  for (const request of [`${dependencyName}/package.json`, dependencyName]) {
+    try {
+      const resolvedPath = requireFromComponent.resolve(request);
+      const entry = packageEntryForResolvedPath(resolvedPath, dependencyName);
+      if (entry) return entry;
+    } catch {
+      // Package exports can hide package.json; try the package entry point.
     }
   }
   return undefined;
 }
 
-function dependencyRefs(manifest, componentPath, included) {
+function includedNames(includedComponents) {
+  const names = new Map();
+  for (const component of includedComponents.values()) {
+    const identities = names.get(component.name) ?? new Set();
+    identities.add(component.identity);
+    names.set(component.name, identities);
+  }
+  return names;
+}
+
+export function dependencyRefs(manifest, componentPath, includedComponents) {
   const names = new Set([
     ...Object.keys(manifest.dependencies ?? {}),
     ...Object.keys(manifest.optionalDependencies ?? {}),
+    ...Object.keys(manifest.peerDependencies ?? {}),
   ]);
-  return [...names]
-    .map((name) => dependencyIdentity(componentPath, name))
-    .filter((identity) => identity && included.has(identity))
-    .sort((left, right) => left.localeCompare(right));
+  const selectedByName = includedNames(includedComponents);
+  const dependencies = [];
+  for (const name of names) {
+    const selectedIdentities = selectedByName.get(name);
+    if (!selectedIdentities) continue;
+    const resolved = resolveDependencyEntry(componentPath, name);
+    if (!resolved) {
+      throw new Error(
+        `Selected dependency ${name} cannot be resolved from ${manifest.name}@${manifest.version}.`,
+      );
+    }
+    if (!includedComponents.has(resolved.identity)) {
+      throw new Error(
+        `Resolved dependency ${resolved.identity} is outside the selected component graph for ${manifest.name}@${manifest.version}.`,
+      );
+    }
+    dependencies.push(resolved.identity);
+  }
+  return dependencies.sort((left, right) => left.localeCompare(right));
 }
 
-function createSbom(artifact, selectedComponents) {
+export function expectedDependencyEntries(artifact, selectedComponents) {
   const firstPartyComponents = [...artifact.firstParty.values()].sort(
     (left, right) => left.identity.localeCompare(right.identity),
   );
-  const included = new Set([
-    ...selectedComponents.map((component) => component.identity),
-    ...firstPartyComponents.map((component) => component.identity),
+  const includedComponents = new Map([
+    ...firstPartyComponents.map((component) => [
+      component.identity,
+      {
+        identity: component.identity,
+        name: component.manifest.name,
+        manifest: component.manifest,
+        path: component.path,
+      },
+    ]),
+    ...selectedComponents.map((component) => [component.identity, component]),
   ]);
+  const dependencies = [
+    {
+      ref: artifact.rootIdentity,
+      dependsOn: dependencyRefs(
+        artifact.manifest,
+        dirname(artifact.manifestPath),
+        includedComponents,
+      ),
+    },
+    ...firstPartyComponents.map((component) => ({
+      ref: component.identity,
+      dependsOn: dependencyRefs(
+        component.manifest,
+        component.path,
+        includedComponents,
+      ),
+    })),
+    ...selectedComponents.map((component) => ({
+      ref: component.identity,
+      dependsOn: dependencyRefs(
+        readManifest(join(component.path, "package.json")),
+        component.path,
+        includedComponents,
+      ),
+    })),
+  ];
+
+  if (artifact.includeNode) {
+    const nodeRef = `runtime:node@${process.versions.node}`;
+    dependencies[0].dependsOn = [...dependencies[0].dependsOn, nodeRef].sort(
+      (left, right) => left.localeCompare(right),
+    );
+    dependencies.push({ ref: nodeRef, dependsOn: [] });
+  }
+  return dependencies;
+}
+
+export function createSbom(artifact, selectedComponents) {
+  const firstPartyComponents = [...artifact.firstParty.values()].sort(
+    (left, right) => left.identity.localeCompare(right.identity),
+  );
   const components = [
     ...firstPartyComponents.map((component) => ({
       type: "library",
@@ -435,28 +607,7 @@ function createSbom(artifact, selectedComponents) {
       ],
     })),
   ];
-  const dependencies = [
-    {
-      ref: artifact.rootIdentity,
-      dependsOn: dependencyRefs(
-        artifact.manifest,
-        dirname(artifact.manifestPath),
-        included,
-      ),
-    },
-    ...firstPartyComponents.map((component) => ({
-      ref: component.identity,
-      dependsOn: dependencyRefs(component.manifest, component.path, included),
-    })),
-    ...selectedComponents.map((component) => ({
-      ref: component.identity,
-      dependsOn: dependencyRefs(
-        readManifest(join(component.path, "package.json")),
-        component.path,
-        included,
-      ),
-    })),
-  ];
+  const dependencies = expectedDependencyEntries(artifact, selectedComponents);
 
   if (artifact.includeNode) {
     const nodeRef = `runtime:node@${process.versions.node}`;
@@ -482,10 +633,6 @@ function createSbom(artifact, selectedComponents) {
         { name: "io.sumi.docs/embedded-sea-runtime", value: "true" },
       ],
     });
-    dependencies[0].dependsOn = [...dependencies[0].dependsOn, nodeRef].sort(
-      (left, right) => left.localeCompare(right),
-    );
-    dependencies.push({ ref: nodeRef, dependsOn: [] });
   }
 
   return {
@@ -564,8 +711,17 @@ function writeArtifactCompliance(artifact, inventory) {
   );
 }
 
-rmSync(outputRoot, { recursive: true, force: true });
-const mcpInventory = loadLicenseInventory("@sumi-os/docs-mcp");
-const webInventory = loadLicenseInventory("@sumi-os/docs-web");
-writeArtifactCompliance(loadMcpArtifact(mcpInventory), mcpInventory);
-writeArtifactCompliance(loadWebArtifact(webInventory), webInventory);
+export function buildComplianceArtifacts() {
+  rmSync(outputRoot, { recursive: true, force: true });
+  const mcpInventory = loadLicenseInventory("@sumi-os/docs-mcp");
+  const webInventory = loadLicenseInventory("@sumi-os/docs-web");
+  writeArtifactCompliance(loadMcpArtifact(mcpInventory), mcpInventory);
+  writeArtifactCompliance(loadWebArtifact(webInventory), webInventory);
+}
+
+if (
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url)
+) {
+  buildComplianceArtifacts();
+}

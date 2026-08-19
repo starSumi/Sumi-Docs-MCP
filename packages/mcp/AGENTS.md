@@ -192,16 +192,21 @@ SEA configuration requirements:
 
 ## Performance requirements
 
-The project target is less than 50 ms from process spawn to the first
-`tools/list` response, with a hard limit of 100 ms. The benchmark command is:
+Cold-start release evidence uses the calibrated policy in ADR-0011. It compares
+the product SEA with benchmark-only raw SEA and empty official-SDK SEA baselines
+in random interleaved order. Release evidence uses 100 starts per subject:
 
 ```powershell
-pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 100 --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 
-This is an open gate: prior Node.js 25.5 measurements were approximately
-150-218 ms. Do not present the target as passing until a current benchmark proves
-it. Record runtime, platform, executable, iteration count, and min/median/max.
+The blocking policy requires zero errors and timeouts, product median at most
+200 ms, product p95 at most 350 ms, median delta to the SDK baseline at most
+35 ms and ratio at most 1.30, and p95 delta at most 75 ms. P99 and maximum are
+diagnostic. Less than 100 ms remains a native-runtime stretch target, not the
+Node.js v0.1 release gate. Do not present the gate as passing until a current
+report proves it. Preserve the runtime, host, executable digests, methodology,
+raw observations, and all summary statistics.
 
 ## Required validation
 

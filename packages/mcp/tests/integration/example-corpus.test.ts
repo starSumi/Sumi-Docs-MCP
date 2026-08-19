@@ -39,6 +39,7 @@ test("self-hosted operator documents stay synchronized", async () => {
     "decisions/0008-product-workspace-topology.md",
     "decisions/0009-reconciliation-and-control-plane-state.md",
     "decisions/0010-runtime-migration-gate.md",
+    "decisions/0011-calibrated-cold-start-policy.md",
     "development.md",
     "getting-started.md",
     "git-workflow.md",

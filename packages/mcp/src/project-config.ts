@@ -5,7 +5,7 @@ import { normalizeBaseUrl } from "./utils/document-url.js";
 import {
   isRemoteDocsSource,
   normalizeRemoteManifestUrl,
-} from "./vfs/remote-source.js";
+} from "./utils/remote-source-url.js";
 
 export const PROJECT_CONFIG_NAME = "sumi-docs.config.json";
 

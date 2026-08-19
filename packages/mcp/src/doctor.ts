@@ -1,5 +1,5 @@
 import type { ParsedCLIOptions } from "./types/index.js";
-import { isRemoteDocsSource } from "./vfs/remote-source.js";
+import { isRemoteDocsSource } from "./utils/remote-source-url.js";
 import { DocsVault } from "./vfs/DocsVault.js";
 import { resolveCliOptions } from "./project-config.js";
 import { formatDoctorPath } from "./utils/diagnostics.js";

@@ -193,8 +193,8 @@ environment variables.
 - The corpus is loaded into memory on first use and is not refreshed in place.
 - Remote sources require an explicit manifest; the server does not crawl sites.
 - The standalone executable is a local build artifact, not a published release.
-- The documented cold-start hard limit of 100 ms is not currently met; prior
-  Node 25.5 measurements were approximately 150-218 ms.
+- Cold-start acceptance uses the calibrated same-host SDK baseline in ADR-0011;
+  less than 100 ms remains a future native-runtime stretch target.
 
 ## License
 
