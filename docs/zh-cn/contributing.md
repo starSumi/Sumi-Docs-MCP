@@ -15,6 +15,10 @@ Skill 与 Agent 集成，请先建立 issue。说明实际问题、预期外部�
 对于范围明确的内容纠错、只改测试的增强，或不改变公开行为的内部修复，可以直接
 提交 pull request。
 
+尚未解决的公开设计使用功能提案 issue 表单，可复现缺陷使用 bug 表单。
+[工程记录](../product/engineering-records/)说明产品需求、提案、ADR、可执行规范、基准、
+安全通告和 Pull Request 分别在何时具有权威性。
+
 ## 准备 Pull Request
 
 从当前默认分支建立主题分支，每个 pull request 只处理一个概念性改动。设计、内容、
@@ -51,3 +55,6 @@ squash 或 rebase merge。
 
 进一步阅读[开发](../development/)、[发布](../releasing/)和
 [Skills、MCP 与编排](../skills-and-orchestration/)。
+
+具备仓库上下文的 Agent 可以使用 `$sumi-docs-pr` 来分类记录、定位改动所属门禁并准备
+Pull Request 正文；该 Skill 不会发布或合并 Pull Request。

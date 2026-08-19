@@ -31,12 +31,32 @@ After changing configuration or rebuilding the MCP package, restart the MCP
 server in the host. The server keeps one process-local, read-only corpus
 snapshot and does not live reload.
 
-## No-Skill fallback
+## Project Skills and direct MCP use
+
+Codex discovers the reviewed `$sumi-docs-use` and `$sumi-docs-pr` workflows from
+`.agents/skills/` when their task descriptions apply. Claude Code can read the
+same canonical files through the repository instructions. They cover setup and
+pull-request preparation; neither is required for ordinary documentation
+queries.
+
+## Direct MCP use
 
 The host configuration is sufficient. An agent can call `list_docs`, search by
 keyword, fetch an exact listed path, and inspect OpenAPI without loading a
 Skill. MCP initialization instructions describe that workflow and its
 read-only, snapshot-based limits.
+
+For product usage, architecture, operations, and stable decisions, agents
+should query this reviewed projection before scanning documentation files.
+Implementation work still uses source and tests as the current authority. The
+MCP server limits its own four-tool surface; it does not grant, revoke, or
+replace the agent host's filesystem permissions or sandbox.
+
+The agent host is the MCP client. For a remote deployment, a host with
+Streamable HTTP support connects to the service URL such as
+`https://mcp.example.com/mcp` instead of launching a local process. The tool
+names, strict schemas, initialization instructions, and corpus identity remain
+the same.
 
 The optional `$sumi-docs-maintain` Skill is only a maintenance router. It helps
 an agent decide which package and validation gates own a repository change. It

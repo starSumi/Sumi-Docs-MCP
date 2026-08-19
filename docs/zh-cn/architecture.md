@@ -10,7 +10,7 @@ Web 与 MCP 仍有独立的构建和发布生命周期；共享范围只包括 s
 英文继续使用根路径以保持现有链接稳定，简体中文完整站点位于
 `/zh-cn/`。Starlight 的语言选择器可以在对应页面之间切换，主题选择器
 支持浅色、深色和跟随系统。它们只影响人类展示层，不改变 MCP manifest
-或 stdio 协议。
+或任一种 MCP 传输。
 
 manifest v1 使用 `zh-cn/getting-started.md` 这类显式路径表示中文机器文档，但不提供
 locale 元数据、语言协商或回退。并行发布的 manifest v2 增加稳定文档 ID、显式 locale
@@ -24,14 +24,30 @@ locale 元数据、语言协商或回退。并行发布的 manifest v2 增加稳
         +-- 发布集成 -> v1 + 不可变 v2 snapshot
                                       |
                                       v
-                              Sumi-Docs-MCP over stdio
+                          一个只读 DocsMcpServer 核心
+                              /                 \
+                           stdio          Streamable HTTP
 ```
 
 ## 所有权
 
 网站负责渲染、导航、可访问性、浏览器搜索和已发布的 corpus 投影。corpus-contract package
 负责纯 manifest 校验与 canonicalization。Sumi-Docs-MCP 负责有边界的获取、非执行文档
-解析、公开工具、输入校验和 stdio 传输。
+解析、公开工具、输入校验，以及 stdio 与无状态 Streamable HTTP adapter。
+
+## 地址与客户端模型
+
+稳定文档 identity、source acquisition、浏览器 route 和 MCP endpoint 是四个独立层次。
+经过审阅的 `docs/` 文件与 catalog 是事实源。Web publisher 从中生成页面与不可变语料
+snapshot，MCP 从中生成只读查询面。Agent 宿主是 MCP client，不是另一份内容权威。
+
+stdio 在第一次内容工具调用时加载语料。Streamable HTTP 在开始监听前完成一次有边界的
+snapshot 加载，再为每个请求创建新的协议服务实例；这些实例只共享当前进程中不可变的
+只读 snapshot。两种 transport 都不保存客户端或对话状态。
+
+本地目录 snapshot 没有 wire revision。因此，只有 MCP 服务通过 Web publisher 的不可变
+v2 manifest 获取语料时，才强制校验 revision 相等。本地 source 模式由集成测试对照经过
+审阅的 catalog 和工具契约，不另造第二套 revision 算法。
 
 ## Workspace 边界
 

@@ -1,8 +1,8 @@
 # Contributing
 
-This repository is private while its product and release contracts are being
-validated. Coordinate substantive changes through a GitHub issue or pull request
-before implementation.
+Coordinate substantive changes through a GitHub issue or pull request before
+implementation. Use the issue forms for reproducible defects and design
+proposals; report vulnerabilities privately through `SECURITY.md`.
 
 ## Local setup
 
@@ -23,10 +23,15 @@ Follow the root and nearest nested `AGENTS.md`. Keep changes within the owning
 workspace, add a regression test before fixing protocol behavior, and update the
 active documentation when a public contract changes.
 
+Use the record appropriate to the change: product requirements for durable
+scope, a proposal issue before an unresolved public design, an ADR for an
+accepted tradeoff, executable schemas and tests for specifications, and
+commit-bound CI artifacts for benchmark evidence. The complete record map is in
+`docs/product/engineering-records.md`.
+
 Use conventional commit messages. The repository rejects automated-agent names
 and generated co-author attribution in commit identity or commit text. Pull
 requests must state validation evidence, compatibility impact, and rollback.
 
-No contributor may publish a package, create a release tag, change repository
-visibility, or archive a predecessor repository before the documented human
-acceptance gate is complete.
+No contributor may publish a package, create a release tag, or archive a
+predecessor repository before the documented human acceptance gate is complete.

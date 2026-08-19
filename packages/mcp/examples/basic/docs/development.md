@@ -50,7 +50,7 @@ Changes to SEA configuration or packaging also require Node.js 25.5 or newer:
 ```powershell
 pnpm run build:sea
 .\artifacts\bin\sumi-docs-mcp.exe --version
-pnpm run example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm run example:smoke --executable artifacts/bin/sumi-docs-mcp.exe
 pnpm run benchmark:cold-start --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 

@@ -3,7 +3,7 @@
 ## Requirements
 
 - Node.js 25.5.0 or newer
-- npm with lockfile support
+- pnpm 10.26.0 through Corepack
 - A directory containing `.md` or `.mdx` files
 - Or a remote HTTPS host with a Sumi documentation manifest
 - Optionally, an OpenAPI 3.x JSON document
@@ -27,7 +27,22 @@ This command compiles the project and runs a stdio round trip against
 Example stdio smoke test passed (5 MCP requests).
 ```
 
-## Serve your documentation
+## Serve the repository documentation
+
+At the workspace root, `sumi-docs.config.json` selects the reviewed root
+`docs/` directory. That makes the product's own documentation the real
+self-hosted example:
+
+```powershell
+pnpm run build
+node packages/mcp/dist/index.js doctor --json
+node packages/mcp/dist/index.js serve
+```
+
+The reviewed Markdown and catalog are the source of truth. The MCP server is a
+read-only query projection, and the connected agent host is the MCP client.
+
+## Serve another corpus
 
 Build once, then point the CLI at a corpus. Relative paths are resolved from the
 current working directory:
@@ -69,22 +84,48 @@ The public tools and MCP client configuration are otherwise unchanged. See
 Build the project first. Then configure the client to launch:
 
 ```text
+working directory: <project-root>
 command: node
 arguments:
-  C:/absolute/path/to/Sumi-Docs-MCP/dist/index.js
+  packages/mcp/dist/index.js
   serve
-  C:/absolute/path/to/docs
-  --openapi
-  C:/absolute/path/to/openapi.json
-  --base-url
-  https://docs.example.com/product/
 ```
 
-Use an absolute source or `--config` path unless the client explicitly starts
-the server in the project working directory. GUI clients often use an
-application directory instead. The JSON template under `examples/clients/` is
-only a launcher template; configuration locations and accepted schemas remain
-client-specific.
+The checked-in Codex, Claude Code, and VS Code adapters provide stable
+project-root launch semantics. Use an absolute source or `--config` path only
+for a host that cannot set its working directory; do not commit machine-specific
+paths. The JSON template under `examples/clients/` is only a launcher template;
+configuration locations and accepted schemas remain client-specific.
+
+A remote MCP client can instead connect to a deployed Streamable HTTP URL. The
+service may read the same root docs or an immutable remote manifest:
+
+```powershell
+node packages/mcp/dist/index.js serve --transport streamable-http
+```
+
+The default endpoint is `http://127.0.0.1:3000/mcp`. It exposes the same tools
+and strict schemas as stdio without creating an MCP session.
+
+## Run the container
+
+From the workspace root, build and start the hardened local service:
+
+```powershell
+docker compose up --build
+```
+
+The default bind mount serves the reviewed root `docs/` corpus read-only. MCP is
+available at `http://localhost:3000/mcp`; `/healthz` checks process liveness and
+`/readyz` checks the loaded corpus snapshot. Set `SUMI_DOCS_SOURCE_DIR` to mount
+another local corpus. Public deployment still requires HTTPS termination, a
+stable allowed Host, request-rate controls, and an accepted authorization design
+before serving private content.
+
+For manual HTTP inspection, import the
+[`sumi-docs-mcp.postman_collection.json`](https://github.com/starSumi/Sumi-Docs-MCP/blob/main/packages/mcp/examples/postman/sumi-docs-mcp.postman_collection.json)
+collection.
+The collection is an operator probe, not an agent-host configuration.
 
 In Codex, ask it to search the configured documentation after starting a new
 session. A successful integration appears as an MCP call such as

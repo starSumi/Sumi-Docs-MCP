@@ -13,12 +13,14 @@
 - [ADR-0009: Keep reconciliation state outside the MCP data plane](decisions/0009-reconciliation-and-control-plane-state.md)
 - [ADR-0010: Keep Node.js until a Rust spike passes a parity gate](decisions/0010-runtime-migration-gate.md)
 - [ADR-0011: Calibrate cold-start performance against the supported SDK](decisions/0011-calibrated-cold-start-policy.md)
+- [ADR-0012: Serve one documentation core over stdio and Streamable HTTP](decisions/0012-dual-transport-and-address-model.md)
+- [ADR-0013: Assign one authority to each public contract](decisions/0013-standards-and-schema-authority.md)
 
 ## Request path
 
 ```text
 MCP client
-  -> stdio JSON-RPC transport
+  -> stdio or stateless Streamable HTTP transport
   -> MCP tool handlers and Zod input validation
   -> process-local DocsVault
   -> Markdown/MDX parser or OpenAPI parser
@@ -31,10 +33,17 @@ local corpus is readable and non-empty. This startup discovery has no client or
 session state. `src/doctor.ts` applies the same resolver and fully loads the
 corpus for a read-only diagnostic without starting MCP.
 
-The MCP server is created without loading the corpus. `tools/list` and discovery
-can respond immediately. The first tool invocation that needs content constructs
-the `DocsVault`; the resulting promise and read-only index are reused for the life
-of that server process.
+In stdio mode, the MCP server is created without loading the corpus, so
+`tools/list` and discovery can respond immediately. The first tool invocation
+that needs content constructs the `DocsVault`; the resulting promise and
+read-only index are reused for the life of that process.
+
+Streamable HTTP performs the same bounded corpus load before opening its
+listener. The HTTP adapter then creates a fresh protocol server per request and
+shares only that immutable process-local snapshot. A local directory or remote
+`_mcp` manifest selects corpus bytes, a catalog route selects the page a person
+opens, and `/mcp` selects the agent-facing transport endpoint. None is inferred
+from another.
 
 In this project, stateless means no client identity, session data, conversation
 state, or request-driven mutation. It does not mean the process has no memory.

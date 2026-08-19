@@ -12,7 +12,7 @@ Use `serve` with an explicit source, tracked config, or discoverable project
 `docs/` directory:
 
 ```powershell
-node dist/index.js serve C:\absolute\path\to\docs
+node dist/index.js serve ./docs
 node dist/index.js doctor --json
 ```
 

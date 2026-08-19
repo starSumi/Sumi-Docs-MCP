@@ -28,8 +28,13 @@ The local site starts at `http://localhost:4321/` by default.
 Development does not require environment variables. A production deployment
 sets `SITE_URL` to its public HTTPS origin and `BASE_PATH` to its root-relative
 deployment prefix so canonical links and the sitemap do not use development
-defaults. Start from `.env.example`; do not commit secrets or machine-specific
-`.env` files.
+defaults. `PUBLIC_MCP_URL` and `PUBLIC_MCP_READINESS_URL` are an optional pair.
+When set, they name the deployed HTTPS Streamable HTTP endpoint and its explicit
+readiness endpoint. The build publishes deterministic MCP discovery metadata at
+`<BASE_PATH>_mcp/server.json`; for GitHub Project Pages this is
+`/Sumi-Docs-MCP/_mcp/server.json`. When the pair is absent, that file is absent
+and the remote probe is skipped. Start from `.env.example`; do not commit
+secrets or machine-specific `.env` files.
 
 ## Verification
 
@@ -84,6 +89,19 @@ $env:BASE_PATH = "/"
 pnpm run verify:release
 ```
 
+When the endpoint pair is configured, verify the already built projection
+against the deployed service before publishing it:
+
+```powershell
+node apps/web/scripts/verify-remote-mcp.mjs
+```
+
+The probe uses `PUBLIC_MCP_READINESS_URL` directly. It does not derive an
+operational URL from `PUBLIC_MCP_URL`. The response must identify the same MCP
+version and protocol, and its corpus revision must equal
+`dist/_mcp/v2/current.json`. In GitHub Actions, `GITHUB_SHA` also binds the
+service build revision to the Pages commit.
+
 GitHub Project Pages uses an origin and subpath instead:
 
 ```powershell
@@ -110,6 +128,9 @@ retaining separate parser and trust boundaries. The accepted decisions live in
 `packages/mcp/docs/decisions/`: ADR-0003 defines explicit locale semantics,
 ADR-0006 defines immutable v2 publication, and ADR-0008 defines the pnpm
 workspace topology.
+
+Web-specific decisions live in `apps/web/docs/decisions/`. ADR-0001 records the
+bounded Starlight component override used for primary header navigation.
 
 ## Project policy
 

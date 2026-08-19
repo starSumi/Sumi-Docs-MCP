@@ -1,8 +1,11 @@
 import { defineConfig } from "astro/config";
 import starlight from "@astrojs/starlight";
 import starlightTypeDoc, { typeDocSidebarGroup } from "starlight-typedoc";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import sumiDocsPublisher from "./integrations/sumi-docs-publisher.mjs";
+import sumiDocsPublisher, {
+  resolveRemoteMcpEnvironment,
+} from "./integrations/sumi-docs-publisher.mjs";
 import { catalogSidebar, contentCatalog } from "./src/content-catalog.ts";
 import { contentRoot } from "./src/content-root.ts";
 import { canonicalTypeDocRoutes } from "./src/typedoc-routes.ts";
@@ -16,6 +19,17 @@ const site = process.env.SITE_URL
   ? normalizeSiteOrigin(process.env.SITE_URL)
   : "http://127.0.0.1:4321";
 const base = normalizeSiteBasePath(process.env.BASE_PATH);
+const mcpPackage = JSON.parse(
+  readFileSync(
+    new URL("../../packages/mcp/package.json", import.meta.url),
+    "utf8",
+  ),
+);
+const remoteMcp = resolveRemoteMcpEnvironment({
+  publicMcpUrl: process.env.PUBLIC_MCP_URL,
+  publicMcpReadinessUrl: process.env.PUBLIC_MCP_READINESS_URL,
+  version: mcpPackage.version,
+});
 const portableFilePath = (url) => fileURLToPath(url).replaceAll("\\", "/");
 
 export default defineConfig({
@@ -59,6 +73,9 @@ export default defineConfig({
         useStarlightDarkModeSwitch: true,
       },
       customCss: ["./src/styles/custom.css"],
+      components: {
+        SiteTitle: "./src/components/SiteTitle.astro",
+      },
       plugins: [
         starlightTypeDoc({
           entryPoints: [
@@ -123,6 +140,7 @@ export default defineConfig({
       catalog: contentCatalog,
       contentRoot,
       openapi: "openapi.json",
+      ...(remoteMcp && { remoteMcp }),
     }),
   ],
 });

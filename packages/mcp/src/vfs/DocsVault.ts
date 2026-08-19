@@ -44,6 +44,7 @@ export class DocsVault {
   private nodes: Map<string, DocNode> = new Map();
   private openApiSpec: OpenAPISpec | null = null;
   private rootPath: string = "";
+  private corpusRevision: string | undefined;
 
   constructor(
     private readonly fileSystem: DocsVaultFileSystem = defaultFileSystem,
@@ -76,6 +77,7 @@ export class DocsVault {
     // Commit only after successful load
     this.rootPath = nextRootPath;
     this.nodes = nextNodes;
+    this.corpusRevision = undefined;
   }
 
   /** Load a bounded read-only corpus declared by a remote JSON manifest. */
@@ -104,6 +106,7 @@ export class DocsVault {
     // Commit only after successful parse
     this.nodes = nextNodes;
     this.openApiSpec = nextOpenApiSpec;
+    this.corpusRevision = corpus.revision;
   }
 
   /**
@@ -300,10 +303,15 @@ export class DocsVault {
   /**
    * Get statistics about loaded documentation
    */
-  getStats(): { documentCount: number; hasOpenApiSpec: boolean } {
+  getStats(): {
+    documentCount: number;
+    hasOpenApiSpec: boolean;
+    corpusRevision?: string;
+  } {
     return {
       documentCount: this.nodes.size,
       hasOpenApiSpec: this.openApiSpec !== null,
+      ...(this.corpusRevision && { corpusRevision: this.corpusRevision }),
     };
   }
 }

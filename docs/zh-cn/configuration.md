@@ -6,7 +6,7 @@ description: 配置来源发现、公开页面 URL、运行模式和状态放置
 CLI 支持显式参数和严格的受版本控制项目配置：
 
 ```text
-sumi-docs-mcp serve [docs-source] [--config <path>] [--openapi <path>] [--base-url <url>] [--transport stdio] [--verbose]
+sumi-docs-mcp serve [docs-source] [--config <path>] [--openapi <path>] [--base-url <url>] [--transport <stdio|streamable-http>] [HTTP options] [--verbose]
 sumi-docs-mcp doctor [docs-source] [--config <path>] [--json] [--show-paths]
 ```
 
@@ -16,13 +16,26 @@ sumi-docs-mcp doctor [docs-source] [--config <path>] [--json] [--show-paths]
 显式 CLI source 选择远程 manifest 时，配置中的本地 `openapi` 仍属于已被替换的本地
 source，因此会被忽略。远程模式仍会拒绝显式 CLI `--openapi`；应在 manifest 中声明。
 
-## 来源和页面地址
+## 地址模型
 
 `docs-source` 决定机器读取的内容，可以是本地目录，也可以是远程 HTTPS manifest 或
 其目录地址。
 
 `--base-url` 决定 MCP 结果中供人打开的 URL。它不会托管内容，也不会改变 MCP 传输。
 Markdown 扩展名会被移除，末段为 `index.md` 或 `index.mdx` 时映射到所在目录页面。
+
+`--transport` 决定 Agent 客户端如何访问 MCP。`stdio` 启动本地子进程；
+`streamable-http` 默认在 `127.0.0.1:3000` 暴露 `/mcp`。语料来源 URL、页面 URL 和 MCP
+endpoint 是相互独立的地址。
+
+HTTP 参数包括 `--http-host`、`--http-port`、`--http-path`、可重复的
+`--allowed-host`、可重复的 `--allowed-origin` 与 `--allow-public-network`。非回环绑定
+必须显式确认并配置至少一个允许的 Host。公开服务的 TLS 与请求速率策略由反向代理负责。
+
+`GET /healthz` 是轻量存活探测。HTTP 启动完成后，`GET /readyz` 报告文档数量；若 source
+是不可变 v2 投影，还会报告其 corpus revision。本地目录和 v1 source 的 revision 为
+`null`。v2 部署可以通过 `SUMI_DOCS_EXPECTED_CORPUS_REVISION` 指定完整的 `sha256:`
+revision；缺失或不匹配时进程会在 listener 就绪前失败。
 
 ## 开发和分发
 
@@ -33,8 +46,26 @@ Markdown 扩展名会被移除，末段为 `index.md` 或 `index.mdx` 时映射�
 | Node 分发      | `node packages/mcp/dist/index.js`              | 从本 workspace 运行编译后的 package   |
 | 独立可执行文件 | `packages/mcp/artifacts/bin/sumi-docs-mcp.exe` | 不依赖外部 Node 安装运行              |
 
-应用没有必需的环境变量。`SITE_URL` 属于 Web release build，不是 MCP runtime 配置。
+Node 分发和维护的容器支持两种传输。独立可执行文件在 HTTP 打包获得单独验收前仍是
+stdio artifact。
+
+运行时不要求 secret。`SITE_URL` 属于 Web release build。容器把文档化的 `SUMI_DOCS_*`
+变量映射到经过校验的 CLI 选项；build 与预期 corpus revision 是新鲜度守卫，不是凭据。
 每个服务进程保留一个只读语料快照，因此源内容变化后必须重启。
+
+Web release build 将 `PUBLIC_MCP_URL` 与 `PUBLIC_MCP_READINESS_URL` 作为一组可选
+配置。两者都必须是无凭据、query 和 fragment 的绝对 HTTPS URL。publisher 不会从
+Streamable HTTP endpoint 推导 readiness endpoint。配置后，它会根据已安装 MCP package
+的身份生成 `<BASE_PATH>_mcp/server.json`；项目 Pages 部署中的公开路径是
+`/Sumi-Docs-MCP/_mcp/server.json`。没有配置这组变量时，不会生成远程 server metadata，
+也会跳过 readiness 探针。
+
+配置后的 Pages artifact 上传前，release 探针要求远程 `/readyz` 返回预期的 service、
+package version、protocol version，以及与构建产物 `_mcp/v2/current.json` 完全一致的
+revision。存在 `GITHUB_SHA` 时，远程 `buildRevision` 还必须指向同一个 commit。探针采用
+10 秒超时和 64 KiB 响应上限，不记录上游响应正文或错误详情。该 revision 保证只适用于
+从 Web v2 projection 加载语料的远程 MCP 服务；本地目录 source 没有 immutable corpus
+revision，应通过字节与 tool contract 验证。
 
 `doctor` 默认只显示项目相对路径或明确的外部路径占位符。`--show-paths` 只用于本机
 交互诊断；即使启用，凭据和调用栈仍会被净化。`serve` 会拒绝该参数。

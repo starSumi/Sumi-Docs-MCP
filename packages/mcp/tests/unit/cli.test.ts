@@ -1,6 +1,11 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseCliOptions, parseDoctorOptions } from "../../src/cli.js";
+import {
+  normalizeBuildRevision,
+  normalizeExpectedCorpusRevision,
+  parseCliOptions,
+  parseDoctorOptions,
+} from "../../src/cli.js";
 
 test("parseCliOptions accepts the documented stdio command", () => {
   assert.deepEqual(
@@ -39,6 +44,155 @@ test("parseCliOptions accepts a remote documentation manifest", () => {
       verbose: false,
     },
   );
+});
+
+test("parseCliOptions accepts a loopback Streamable HTTP endpoint", () => {
+  assert.deepEqual(
+    parseCliOptions([
+      "serve",
+      "examples/basic/docs",
+      "--transport",
+      "streamable-http",
+      "--http-port",
+      "4310",
+      "--http-path",
+      "/mcp",
+    ]),
+    {
+      docsSource: "examples/basic/docs",
+      openApiPath: undefined,
+      baseUrl: undefined,
+      transport: "streamable-http",
+      verbose: false,
+      http: {
+        host: "127.0.0.1",
+        port: 4310,
+        path: "/mcp",
+        allowedHosts: [],
+        allowedOrigins: [],
+        allowPublicNetwork: false,
+      },
+    },
+  );
+});
+
+test("deployment revisions require complete immutable identifiers", () => {
+  const gitRevision = "A".repeat(40);
+  const corpusRevision = `sha256:${"B".repeat(64)}`;
+
+  assert.equal(normalizeBuildRevision(gitRevision), gitRevision.toLowerCase());
+  assert.equal(
+    normalizeBuildRevision(corpusRevision),
+    corpusRevision.toLowerCase(),
+  );
+  assert.equal(
+    normalizeExpectedCorpusRevision(corpusRevision),
+    corpusRevision.toLowerCase(),
+  );
+  assert.equal(normalizeBuildRevision("  "), undefined);
+  assert.equal(normalizeExpectedCorpusRevision(undefined), undefined);
+
+  for (const invalid of ["main", "abc123", `sha256:${"a".repeat(63)}`]) {
+    assert.throws(
+      () => normalizeBuildRevision(invalid),
+      /full Git SHA|sha256/u,
+    );
+  }
+  assert.throws(
+    () => normalizeExpectedCorpusRevision("a".repeat(40)),
+    /sha256 corpus revision/u,
+  );
+});
+
+test("parseCliOptions requires an explicit network boundary for remote HTTP", () => {
+  assert.deepEqual(
+    parseCliOptions([
+      "serve",
+      "https://docs.example.com/_mcp/v2/current.json",
+      "--transport",
+      "streamable-http",
+      "--http-host",
+      "0.0.0.0",
+      "--http-port",
+      "8080",
+      "--http-path",
+      "/mcp",
+      "--allowed-host",
+      "mcp.example.com",
+      "--allowed-origin",
+      "docs.example.com",
+      "--allow-public-network",
+    ]),
+    {
+      docsSource: "https://docs.example.com/_mcp/v2/current.json",
+      openApiPath: undefined,
+      baseUrl: undefined,
+      transport: "streamable-http",
+      verbose: false,
+      http: {
+        host: "0.0.0.0",
+        port: 8080,
+        path: "/mcp",
+        allowedHosts: ["mcp.example.com"],
+        allowedOrigins: ["docs.example.com"],
+        allowPublicNetwork: true,
+      },
+    },
+  );
+
+  assert.throws(
+    () =>
+      parseCliOptions([
+        "serve",
+        "examples/basic/docs",
+        "--transport",
+        "streamable-http",
+        "--http-host",
+        "0.0.0.0",
+        "--allowed-host",
+        "mcp.example.com",
+      ]),
+    /allow-public-network/i,
+  );
+  assert.throws(
+    () =>
+      parseCliOptions([
+        "serve",
+        "examples/basic/docs",
+        "--transport",
+        "streamable-http",
+        "--http-host",
+        "0.0.0.0",
+        "--allow-public-network",
+      ]),
+    /allowed-host/i,
+  );
+});
+
+test("parseCliOptions accepts repeated HTTP allowlist options", () => {
+  const result = parseCliOptions([
+    "serve",
+    "examples/basic/docs",
+    "--transport",
+    "streamable-http",
+    "--http-host",
+    "0.0.0.0",
+    "--allowed-host",
+    "localhost",
+    "--allowed-host",
+    "127.0.0.1",
+    "--allowed-origin",
+    "docs.example.com",
+    "--allowed-origin",
+    "admin.example.com",
+    "--allow-public-network",
+  ]);
+
+  assert.deepEqual(result?.http?.allowedHosts, ["localhost", "127.0.0.1"]);
+  assert.deepEqual(result?.http?.allowedOrigins, [
+    "docs.example.com",
+    "admin.example.com",
+  ]);
 });
 
 test("parseCliOptions accepts discovery and explicit config", () => {
@@ -110,8 +264,25 @@ test("parseCliOptions rejects missing commands and unsupported transports", () =
   assert.throws(
     () =>
       parseCliOptions(["serve", "examples/basic/docs", "--transport", "http"]),
-    /only stdio/,
+    /stdio or streamable-http/,
   );
+});
+
+test("Streamable HTTP reserves operational endpoints", () => {
+  for (const path of ["/healthz", "/readyz"]) {
+    assert.throws(
+      () =>
+        parseCliOptions([
+          "serve",
+          "examples/basic/docs",
+          "--transport",
+          "streamable-http",
+          "--http-path",
+          path,
+        ]),
+      /reserved/u,
+    );
+  }
 });
 
 test("parseCliOptions rejects unsafe or ambiguous base URLs", () => {

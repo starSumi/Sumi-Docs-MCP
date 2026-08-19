@@ -3,8 +3,9 @@ title: Remote sources
 description: Publish a bounded manifest for read-only remote documentation.
 ---
 
-Remote mode downloads an immutable documentation snapshot from a strict manifest.
-It does not crawl a website and does not add an HTTP MCP transport.
+Remote source mode downloads an immutable documentation snapshot from a strict
+manifest. It does not crawl a website. Source mode is independent of transport:
+the same corpus can be served through stdio or Streamable HTTP.
 
 ## Manifest
 
@@ -33,11 +34,30 @@ The MCP loader verifies the canonical manifest, revision, byte counts, and
 SHA-256 digests. Directory and v1 manifest URLs remain supported for backward
 compatibility.
 
+The projection contains reviewed Markdown or MDX. General HTML crawling, DOM
+execution, and heuristic AST cleaning are deliberately outside the MCP core. A
+separate ingestion system must normalize, record provenance, and submit reviewed
+content before the publisher accepts it.
+
 ## Human routes
 
 The adjacent `_mcp/sumi-docs-routes.json` maps each corpus path to a rendered
 page. It is a deployment verification artifact, not part of the MCP manifest
 protocol. The build fails when a mapped page or raw source is missing.
+
+## Source, page, and endpoint
+
+These addresses have separate owners:
+
+```text
+https://docs.example.com/                       rendered human pages
+https://docs.example.com/_mcp/v2/current.json  immutable corpus locator
+https://mcp.example.com/mcp                    Streamable HTTP MCP endpoint
+```
+
+GitHub Pages can host the first two static surfaces. The MCP endpoint needs a
+running Node service or another conforming runtime, normally behind a TLS reverse
+proxy. It may be mounted on the same domain, but it is not the `_mcp` locator.
 
 ## Local exercise
 
@@ -48,6 +68,14 @@ pnpm run build
 pnpm run preview
 node dist/index.js serve http://127.0.0.1:4321/_mcp/ --base-url http://127.0.0.1:4321/
 ```
+
+To exercise remote source and remote transport together:
+
+```powershell
+node packages/mcp/dist/index.js serve http://127.0.0.1:4321/_mcp/v2/current.json --base-url http://127.0.0.1:4321/ --transport streamable-http
+```
+
+Connect the client to `http://127.0.0.1:3000/mcp`.
 
 Loopback HTTP is accepted for development. Production remote sources require
 HTTPS and do not support credentials, cookies, redirects, query strings, or

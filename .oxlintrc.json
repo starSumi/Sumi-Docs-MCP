@@ -102,6 +102,12 @@
   },
   "overrides": [
     {
+      "files": ["**/*.astro"],
+      "globals": {
+        "Astro": "readonly"
+      }
+    },
+    {
       "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
       "rules": {
         "constructor-super": "off",

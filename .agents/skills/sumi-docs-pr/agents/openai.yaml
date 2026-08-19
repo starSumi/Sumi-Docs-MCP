@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sumi Docs: Pull Request"
+  short_description: "Prepare and validate a Sumi Docs PR"
+  default_prompt: "Use $sumi-docs-pr to classify, validate, and draft the current Sumi Docs pull request without publishing it."

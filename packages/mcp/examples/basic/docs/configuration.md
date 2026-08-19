@@ -7,20 +7,26 @@ behavior on `NODE_ENV`.
 ## CLI options
 
 ```text
-sumi-docs-mcp serve [docs-source] [--config <path>] [--openapi <path>] [--base-url <url>] [--transport stdio] [--verbose]
+sumi-docs-mcp serve [docs-source] [--config <path>] [--openapi <path>] [--base-url <url>] [--transport <stdio|streamable-http>] [HTTP options] [--verbose]
 sumi-docs-mcp doctor [docs-source] [--config <path>] [--json] [--show-paths]
 ```
 
-| Option              | Required | Meaning                                                          |
-| ------------------- | -------- | ---------------------------------------------------------------- |
-| `[docs-source]`     | no       | local directory or remote HTTPS manifest/base URL                |
-| `--config <path>`   | no       | explicitly selected strict project config                        |
-| `--openapi <path>`  | no       | local-mode OpenAPI 3.x JSON exposed by `get_openapi_spec`        |
-| `--base-url <url>`  | no       | human-facing page prefix added to document tool results          |
-| `--transport stdio` | no       | transport selector; stdio is the default and only implementation |
-| `--verbose`         | no       | emits lifecycle diagnostics to stderr                            |
-| `doctor --json`     | no       | emits a machine-readable read-only diagnostic report             |
-| `--show-paths`      | no       | doctor-only opt-in for resolved local paths                      |
+| Option                    | Required | Meaning                                                   |
+| ------------------------- | -------- | --------------------------------------------------------- |
+| `[docs-source]`           | no       | local directory or remote HTTPS manifest/base URL         |
+| `--config <path>`         | no       | explicitly selected strict project config                 |
+| `--openapi <path>`        | no       | local-mode OpenAPI 3.x JSON exposed by `get_openapi_spec` |
+| `--base-url <url>`        | no       | human-facing page prefix added to document tool results   |
+| `--transport <type>`      | no       | `stdio` (default) or stateless `streamable-http`          |
+| `--http-host <host>`      | no       | HTTP bind host; defaults to `127.0.0.1`                   |
+| `--http-port <port>`      | no       | HTTP port; defaults to `3000`                             |
+| `--http-path <path>`      | no       | exact MCP endpoint path; defaults to `/mcp`               |
+| `--allowed-host <host>`   | no       | accepted Host hostname; repeatable                        |
+| `--allowed-origin <host>` | no       | accepted browser Origin hostname; repeatable              |
+| `--allow-public-network`  | no       | explicit acknowledgement for a non-loopback bind          |
+| `--verbose`               | no       | emits lifecycle diagnostics to stderr                     |
+| `doctor --json`           | no       | emits a machine-readable read-only diagnostic report      |
+| `--show-paths`            | no       | doctor-only opt-in for resolved local paths               |
 
 ## Project discovery
 
@@ -71,7 +77,7 @@ read-only corpus and optional OpenAPI document without starting MCP:
 ```powershell
 node dist/index.js doctor --json
 node dist/index.js doctor ./product-docs
-node dist/index.js doctor --config C:\project\sumi-docs.config.json
+node dist/index.js doctor --config ./config/sumi-docs.config.json
 ```
 
 The report includes the Node.js compatibility check, project root, selected
@@ -83,11 +89,13 @@ writes one object to stdout and uses a nonzero exit code for a failed check.
 Sanitized loader diagnostics remain on stderr.
 
 Hidden directories and `node_modules` below the documentation root are skipped.
-The server constructs a read-only in-memory snapshot on the first tool call.
-Restart it after changing source documentation.
+Stdio constructs a read-only in-memory snapshot on the first content tool call.
+Streamable HTTP constructs the same snapshot before opening its listener.
+Restart either process after changing source documentation.
 
-Remote mode downloads the manifest-declared corpus when the first content tool
-is called. Use either an explicit manifest URL or its containing directory:
+In stdio remote mode, the manifest-declared corpus is downloaded when the first
+content tool is called. Streamable HTTP downloads it during startup. Use either
+an explicit manifest URL or its containing directory:
 
 ```powershell
 node dist/index.js serve https://content.example.com/product/sumi-docs-manifest.json
@@ -98,6 +106,40 @@ Both commands use the same MCP tools as local mode. `--openapi` is rejected in
 remote mode; declare `openapi` in the remote manifest instead. The server does
 not crawl HTML pages or infer a remote directory listing. See
 [remote-sources.md](remote-sources.md).
+
+## Transport endpoint
+
+Source acquisition and MCP transport are independent. This loopback endpoint
+reads the default local corpus:
+
+```powershell
+node dist/index.js serve --transport streamable-http
+```
+
+This endpoint reads a published immutable corpus while returning links to its
+human site:
+
+```powershell
+node dist/index.js serve https://docs.example.com/_mcp/v2/current.json --base-url https://docs.example.com/ --transport streamable-http --http-port 3000
+```
+
+In both cases the MCP client connects to `http://127.0.0.1:3000/mcp`. A reverse
+proxy can publish that endpoint as `https://mcp.example.com/mcp` or mount it at
+`https://docs.example.com/mcp`; the static `_mcp` path remains a corpus source,
+not an MCP endpoint.
+
+`GET /healthz` is a lightweight process liveness check and does not load the
+corpus. `GET /readyz` reports readiness only after HTTP startup has loaded the
+read-only snapshot; it includes the package version, optional build revision,
+document count, and the immutable v2 corpus revision when one exists. Local
+directories and v1 sources report a `null` corpus revision. Neither route is an
+MCP endpoint.
+
+For a non-loopback bind, add `--allow-public-network` and at least one
+`--allowed-host`. Add every permitted browser Origin explicitly. Terminate TLS,
+apply request-rate controls, and expose health checks at the deployment edge.
+The endpoint has no client session state and is suitable only for public
+corpora; private-corpus authorization requires a separate accepted design.
 
 ## Public document URLs
 
@@ -159,15 +201,35 @@ Development and production do not select different business behavior. They use
 different entry artifacts. Source discovery follows the same deterministic
 project contract in every mode.
 
-## Environment variables
+## Deployment environment
 
-There are no application environment variables. The cold-start benchmark also
-uses CLI options:
+The CLI remains the primary runtime contract. The container entry point maps
+these environment variables to the same validated CLI options:
+
+| Variable                             | Meaning                                                            |
+| ------------------------------------ | ------------------------------------------------------------------ |
+| `SUMI_DOCS_SOURCE`                   | local directory or remote manifest; defaults to `/data/docs`       |
+| `SUMI_DOCS_HTTP_HOST`                | bind host; defaults to `0.0.0.0` in the container                  |
+| `SUMI_DOCS_HTTP_PORT` or `PORT`      | listener port; defaults to `3000`                                  |
+| `SUMI_DOCS_HTTP_PATH`                | MCP path; defaults to `/mcp`                                       |
+| `SUMI_DOCS_ALLOWED_HOSTS`            | required comma-separated Host allowlist                            |
+| `SUMI_DOCS_ALLOWED_ORIGINS`          | optional comma-separated browser Origin allowlist                  |
+| `SUMI_DOCS_OPENAPI`                  | optional local OpenAPI JSON path                                   |
+| `SUMI_DOCS_BASE_URL`                 | optional human-facing documentation origin                         |
+| `SUMI_DOCS_BUILD_REVISION`           | optional full Git SHA or `sha256:` build identity                  |
+| `SUMI_DOCS_EXPECTED_CORPUS_REVISION` | optional v2 `sha256:` revision; missing or mismatch aborts startup |
+
+The two revision variables are read by the server in any Node deployment, not
+only by the container. Empty values are treated as unset. They are identity and
+freshness guards, not credentials.
+
+The cold-start benchmark uses command options:
 
 ```powershell
 pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 5
 pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 
-Do not add `.env.example` until the application has an actual environment-based
-configuration contract.
+Docker Compose may read a local ignored `.env`, but no secrets are required for
+the public-corpus example. Do not commit hostnames, credentials, or private
+source locations in an environment file.

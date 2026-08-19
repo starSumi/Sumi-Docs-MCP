@@ -46,6 +46,7 @@ schema validation and canonicalization belong to `@sumi-os/corpus-contract`.
 - `src/assets/`: project visual assets
 - `src/styles/`: restrained Starlight customization
 - `integrations/`: bounded build-time publishing behavior
+- `docs/decisions/`: durable Web-specific architecture decisions
 - `scripts/`: deterministic validation and development helpers
 - `tests/`: publishing contract tests
 - `public/`: reviewed static inputs, including OpenAPI
