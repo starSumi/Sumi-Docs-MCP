@@ -55,10 +55,19 @@ jobs:
         env:
           SITE_URL: ${{ steps.pages.outputs.origin }}
           BASE_PATH: ${{ steps.pages.outputs.base_path }}
+          PUBLIC_MCP_URL: ${{ vars.PUBLIC_MCP_URL }}
+          PUBLIC_MCP_READINESS_URL: ${{ vars.PUBLIC_MCP_READINESS_URL }}
         run: |
           pnpm run verify:contract
           pnpm --filter @sumi-os/docs-web verify:release
           pnpm run verify:integration
+
+      - name: Verify configured remote MCP readiness
+        env:
+          PUBLIC_MCP_URL: ${{ vars.PUBLIC_MCP_URL }}
+          PUBLIC_MCP_READINESS_URL: ${{ vars.PUBLIC_MCP_READINESS_URL }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: node apps/web/scripts/verify-remote-mcp.mjs
 
       - name: Confirm deployment source is still current
         id: freshness

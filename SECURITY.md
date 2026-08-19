@@ -1,12 +1,8 @@
 # Security policy
 
-Sumi Docs publishes source code but does not yet have a supported product
-release. Do not report vulnerabilities in a public issue.
+Read the maintained [Sumi Docs security policy](docs/security.md) for the current
+support and trust boundaries. The same reviewed policy is published to the Web
+site and the machine-readable documentation corpus.
 
 Use [GitHub private vulnerability reporting](https://github.com/starSumi/Sumi-Docs-MCP/security/advisories/new)
-and include the affected commit, reproduction steps, impact, and any known
-mitigation. Do not include secrets or private corpus content in logs or reports.
-
-The MCP server is intentionally read-only and unauthenticated. Do not point it at
-private remote documentation until an authenticated source design has completed
-architecture and security review.
+instead of opening a public issue.

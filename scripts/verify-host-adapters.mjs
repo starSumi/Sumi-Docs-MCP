@@ -22,6 +22,8 @@ const codex = parseToml(
 ).mcp_servers.sumi_docs;
 const claude = (await readJson(".mcp.json")).mcpServers["sumi-docs"];
 const vscode = (await readJson(".vscode/mcp.json")).servers["sumi-docs"];
+const expectedVersion = (await readJson("packages/mcp/package.json")).version;
+const serverInfoMetaKey = "io.modelcontextprotocol/serverInfo";
 
 assert.equal(vscode.type, "stdio");
 assert.equal(codex.command, "node");
@@ -35,9 +37,9 @@ function resolveVariables(value) {
     .replaceAll("${workspaceFolder}", projectRoot);
 }
 
-async function probe({ name, command, args, cwd }) {
-  let resolvedCommand = command;
-  let resolvedArgs = args.map(resolveVariables);
+async function sendRequest({ name, command, args, cwd }, message) {
+  const resolvedCommand = command;
+  const resolvedArgs = args.map(resolveVariables);
   const child = spawn(resolvedCommand, resolvedArgs, {
     cwd,
     env: process.env,
@@ -64,7 +66,7 @@ async function probe({ name, command, args, cwd }) {
         rejectResult(new Error(`${name} wrote non-JSON stdout: ${line}`));
         return;
       }
-      if (message.id !== 1) return;
+      if (message.id !== messageId) return;
       clearTimeout(timeout);
       output.close();
       child.kill();
@@ -83,13 +85,50 @@ async function probe({ name, command, args, cwd }) {
       }
     });
   });
-  child.stdin.write(request);
-  const result = await response;
+  const messageId = message.id;
+  child.stdin.write(`${JSON.stringify(message)}\n`);
+  return response;
+}
+
+async function probe(adapter) {
+  const toolsResponse = await sendRequest(adapter, {
+    jsonrpc: "2.0",
+    id: 1,
+    method: "tools/list",
+    params: { _meta: meta },
+  });
 
   assert.deepEqual(
-    new Set(result.result?.tools?.map(({ name: toolName }) => toolName)),
+    new Set(toolsResponse.result?.tools?.map(({ name: toolName }) => toolName)),
     expectedTools,
-    `${name} must expose the stable four-tool surface`,
+    `${adapter.name} must expose the stable four-tool surface`,
+  );
+  assert.equal(
+    toolsResponse.result?._meta?.[serverInfoMetaKey]?.version,
+    expectedVersion,
+    `${adapter.name} must report the expected server version`,
+  );
+
+  const corpusResponse = await sendRequest(adapter, {
+    jsonrpc: "2.0",
+    id: 2,
+    method: "tools/call",
+    params: {
+      name: "list_docs",
+      arguments: {},
+      _meta: meta,
+    },
+  });
+  const content = corpusResponse.result?.content;
+  assert.equal(
+    Array.isArray(content) && content[0]?.type,
+    "text",
+    `${adapter.name} must return a text list_docs result`,
+  );
+  const paths = new Set(JSON.parse(content[0].text).map(({ path }) => path));
+  assert.ok(
+    paths.has("architecture.md") && paths.has("getting-started.md"),
+    `${adapter.name} must load the reviewed self-hosted product corpus`,
   );
 }
 
@@ -101,13 +140,6 @@ const meta = {
   },
   "io.modelcontextprotocol/clientCapabilities": {},
 };
-const request = `${JSON.stringify({
-  jsonrpc: "2.0",
-  id: 1,
-  method: "tools/list",
-  params: { _meta: meta },
-})}\n`;
-
 for (const adapter of [
   {
     name: "Codex",

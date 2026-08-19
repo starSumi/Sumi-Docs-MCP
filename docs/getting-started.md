@@ -4,7 +4,8 @@ description: Run Sumi-Docs-MCP against this repository, another local corpus, or
 ---
 
 Sumi-Docs-MCP exposes documentation through four read-only tools: list, search,
-fetch, and OpenAPI lookup. It communicates with MCP clients over stdio.
+fetch, and OpenAPI lookup. MCP clients connect through local stdio or stateless
+Streamable HTTP.
 
 ## This repository
 
@@ -17,9 +18,12 @@ node packages/mcp/dist/index.js doctor --json
 node packages/mcp/dist/index.js serve
 ```
 
-The tracked project config selects root `docs/`. The process then waits for
-JSON-RPC input from an MCP client. See [Agent host integration](../agent-hosts/)
-for the checked-in Codex, Claude Code, and VS Code adapters.
+The tracked project config selects root `docs/`. Those reviewed files and the
+content catalog are the source of truth, so this site is also the real
+self-hosted product example. The MCP server is a read-only projection and the
+connected agent host is the MCP client. See
+[Agent host integration](../agent-hosts/) for the checked-in Codex, Claude Code,
+and VS Code adapters.
 
 To serve another local Markdown or MDX corpus, pass its directory explicitly:
 
@@ -39,11 +43,41 @@ root for links that people can open:
 node packages/mcp/dist/index.js serve https://docs.example.com/_mcp/ --base-url https://docs.example.com/
 ```
 
-Remote mode still uses stdio for MCP traffic. HTTPS is used only to download the
-bounded, read-only documentation snapshot. It does not crawl the site.
+The command still uses stdio for MCP traffic; HTTPS selects only the bounded,
+read-only corpus snapshot. It does not crawl the site.
+
+To expose the same core to a remote MCP client, start the Node.js distribution
+with Streamable HTTP:
+
+```powershell
+node packages/mcp/dist/index.js serve https://docs.example.com/_mcp/v2/current.json --base-url https://docs.example.com/ --transport streamable-http
+```
+
+The loopback endpoint is `http://127.0.0.1:3000/mcp`. Public deployment requires
+an explicit network bind policy and a TLS reverse proxy.
+
+## Container deployment
+
+The repository includes a multi-stage, non-root container for the same Node.js
+server:
+
+```powershell
+docker compose up --build
+```
+
+The default read-only bind mount is root `docs/`. MCP is available at
+`http://localhost:3000/mcp`; `/healthz` checks the process without loading the
+corpus, while `/readyz` identifies the loaded snapshot. Set
+`SUMI_DOCS_SOURCE_DIR` to mount another local corpus. The Postman collection in
+`packages/mcp/examples/postman/` is a manual deployment probe, not an MCP client
+configuration.
 
 ## Client configuration
 
 Configure an MCP client to launch `node` or the standalone executable with the
 same `serve` arguments. Prefer the host's project-root variable or the npm
 workspace launcher over a machine-specific absolute path.
+
+For a remote host, configure the Streamable HTTP endpoint URL instead of a local
+process command. No Skill is required: initialization instructions and
+`tools/list` describe the query surface.

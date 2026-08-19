@@ -38,6 +38,32 @@ Routes and sidebar slugs are explicit and may differ from source paths. Do not
 infer locale from filenames in the MCP protocol; manifest v1 treats
 locale-prefixed values as ordinary paths.
 
+## Navigation and component extensions
+
+The site has three navigation planes:
+
+- `src/header-navigation.ts` defines the small bilingual set of cross-section
+  links in the desktop header. Document targets resolve from stable catalog IDs;
+  generated API targets use explicit routes.
+- `src/content-catalog.ts` defines the complete left sidebar, locale pairs,
+  routes, stable IDs, and machine projection.
+- Starlight derives the right table of contents from headings in the current
+  page.
+
+Do not add every page to the header or maintain a second sidebar list. To add a
+header entry, extend the typed definition and its route, locale, active-state,
+and base-path tests. The `SiteTitle` override deliberately proxies Starlight's
+default brand component and appends only the local navigation. Other component
+overrides require a separate compatibility review because they take ownership
+away from the framework. See
+`docs/decisions/0001-starlight-header-navigation.md`.
+
+Ordering and relevance remain separate contracts. Catalog `section.order` and
+document `order` define the complete sidebar. Definition order in
+`src/header-navigation.ts` defines the small curated header set. MCP search uses
+lexical relevance and deterministic tie-breaking; it must not reinterpret
+presentation order as search relevance.
+
 ## Publication transaction
 
 At build start, the publisher reads every reviewed source and OpenAPI input into

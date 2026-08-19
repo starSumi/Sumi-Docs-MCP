@@ -76,20 +76,32 @@ export interface VFSConfig {
  * CLI options
  */
 export interface CLIOptions {
-  transport: "stdio";
+  transport: "stdio" | "streamable-http";
   docsSource: string;
   openApiPath?: string;
   baseUrl?: string;
+  http?: StreamableHttpOptions;
   verbose?: boolean;
+}
+
+/** Explicit network boundary for the optional Node.js HTTP distribution. */
+export interface StreamableHttpOptions {
+  host: string;
+  port: number;
+  path: string;
+  allowedHosts: string[];
+  allowedOrigins: string[];
+  allowPublicNetwork: boolean;
 }
 
 /** Parsed CLI values before project discovery resolves the documentation source. */
 export interface ParsedCLIOptions {
-  transport: "stdio";
+  transport: "stdio" | "streamable-http";
   docsSource?: string;
   openApiPath?: string;
   baseUrl?: string;
   configPath?: string;
+  http?: StreamableHttpOptions;
   verbose?: boolean;
 }
 

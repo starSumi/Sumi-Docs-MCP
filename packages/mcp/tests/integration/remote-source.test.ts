@@ -263,6 +263,7 @@ test("DocsVault verifies and loads an immutable v2 corpus snapshot", async () =>
       ["api/reference.mdx", "guide.md"],
     );
     assert.match(vault.getDoc("guide.md")?.content ?? "", /verified v2/);
+    assert.equal(vault.getStats().corpusRevision, locator.revision);
     assert.equal(vault.getDoc("guide.md")?.route, "/guide/");
     assert.equal(vault.getOpenApiSpec()?.info.title, "Remote API");
     assert.match(

@@ -30,7 +30,17 @@ Thumbs.db
 # repository source; sessions, logs, caches, settings, and plugin state stay
 # ignored.
 .agent/
-.agents/
+.agents/**
+!.agents/skills/
+.agents/skills/**
+!.agents/skills/sumi-docs-use/
+!.agents/skills/sumi-docs-use/SKILL.md
+!.agents/skills/sumi-docs-use/agents/
+!.agents/skills/sumi-docs-use/agents/openai.yaml
+!.agents/skills/sumi-docs-pr/
+!.agents/skills/sumi-docs-pr/SKILL.md
+!.agents/skills/sumi-docs-pr/agents/
+!.agents/skills/sumi-docs-pr/agents/openai.yaml
 .claude/**
 .codex/**
 !.codex/config.toml

@@ -40,6 +40,8 @@ test("self-hosted operator documents stay synchronized", async () => {
     "decisions/0009-reconciliation-and-control-plane-state.md",
     "decisions/0010-runtime-migration-gate.md",
     "decisions/0011-calibrated-cold-start-policy.md",
+    "decisions/0012-dual-transport-and-address-model.md",
+    "decisions/0013-standards-and-schema-authority.md",
     "development.md",
     "getting-started.md",
     "git-workflow.md",

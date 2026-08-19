@@ -1,0 +1,419 @@
+{
+  "info": {
+    "_postman_id": "9563c653-e3bb-4ae2-9c86-85bdcdde1361",
+    "name": "Sumi Docs MCP - Streamable HTTP",
+    "description": "Stateless protocol probes for the read-only Sumi Docs MCP Streamable HTTP endpoint.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "mcp_url",
+      "value": "http://127.0.0.1:3000/mcp",
+      "type": "string"
+    },
+    {
+      "key": "health_url",
+      "value": "http://127.0.0.1:3000/healthz",
+      "type": "string"
+    },
+    {
+      "key": "readiness_url",
+      "value": "http://127.0.0.1:3000/readyz",
+      "type": "string"
+    },
+    {
+      "key": "protocol_version",
+      "value": "2026-07-28",
+      "type": "string"
+    },
+    {
+      "key": "expected_version",
+      "value": "0.1.0",
+      "type": "string"
+    },
+    {
+      "key": "expected_build_revision",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "search_query",
+      "value": "architecture",
+      "type": "string"
+    },
+    {
+      "key": "document_path",
+      "value": "getting-started.md",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('liveness is healthy', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('ok');",
+              "  pm.expect(body.service).to.eql('sumi-docs-mcp');",
+              "  pm.expect(body.version).to.eql(pm.variables.get('expected_version'));",
+              "  pm.expect(body.protocolVersion).to.eql(pm.variables.get('protocol_version'));",
+              "  pm.expect(body.transport).to.eql('streamable-http');",
+              "});",
+              "pm.test('liveness is stateless and non-cacheable', function () {",
+              "  pm.expect(pm.response.headers.has('Mcp-Session-Id')).to.be.false;",
+              "  pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{health_url}}",
+        "description": "Process liveness. This probe does not establish an MCP session."
+      },
+      "response": []
+    },
+    {
+      "name": "Readiness",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('corpus snapshot is ready', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.status).to.eql('ready');",
+              "  pm.expect(body.service).to.eql('sumi-docs-mcp');",
+              "  pm.expect(body.version).to.eql(pm.variables.get('expected_version'));",
+              "  pm.expect(body.protocolVersion).to.eql(pm.variables.get('protocol_version'));",
+              "  pm.expect(body.corpus.documentCount).to.be.above(0);",
+              "  pm.expect(body.corpus.revision === null || typeof body.corpus.revision === 'string').to.be.true;",
+              "  const expectedRevision = pm.variables.get('expected_build_revision');",
+              "  if (expectedRevision) pm.expect(body.buildRevision).to.eql(expectedRevision);",
+              "});",
+              "pm.test('readiness is stateless and non-cacheable', function () {",
+              "  pm.expect(pm.response.headers.has('Mcp-Session-Id')).to.be.false;",
+              "  pm.expect(pm.response.headers.get('Cache-Control')).to.include('no-store');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{readiness_url}}",
+        "description": "Readiness and immutable corpus identity for this process."
+      },
+      "response": []
+    },
+    {
+      "name": "Server discover",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('server advertises the current protocol', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  pm.expect(body.jsonrpc).to.eql('2.0');",
+              "  pm.expect(body.result.supportedVersions).to.include(pm.variables.get('protocol_version'));",
+              "});",
+              "pm.test('discovery creates no server session', function () {",
+              "  pm.expect(pm.response.headers.has('Mcp-Session-Id')).to.be.false;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, text/event-stream"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "MCP-Protocol-Version",
+            "value": "{{protocol_version}}"
+          },
+          {
+            "key": "MCP-Method",
+            "value": "server/discover"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 1,\n  \"method\": \"server/discover\",\n  \"params\": {\n    \"_meta\": {\n      \"io.modelcontextprotocol/protocolVersion\": \"{{protocol_version}}\",\n      \"io.modelcontextprotocol/clientInfo\": {\n        \"name\": \"sumi-docs-postman\",\n        \"version\": \"1.0.0\"\n      },\n      \"io.modelcontextprotocol/clientCapabilities\": {}\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{mcp_url}}",
+        "description": "Protocol discovery without a legacy initialize handshake."
+      },
+      "response": []
+    },
+    {
+      "name": "Tools list",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('stable read-only tool surface is advertised', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  const names = body.result.tools.map((tool) => tool.name).sort();",
+              "  pm.expect(names).to.eql(['fetch_doc', 'get_openapi_spec', 'list_docs', 'search_docs']);",
+              "});",
+              "pm.test('tool discovery creates no server session', function () {",
+              "  pm.expect(pm.response.headers.has('Mcp-Session-Id')).to.be.false;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, text/event-stream"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "MCP-Protocol-Version",
+            "value": "{{protocol_version}}"
+          },
+          {
+            "key": "MCP-Method",
+            "value": "tools/list"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 2,\n  \"method\": \"tools/list\",\n  \"params\": {\n    \"_meta\": {\n      \"io.modelcontextprotocol/protocolVersion\": \"{{protocol_version}}\",\n      \"io.modelcontextprotocol/clientInfo\": {\n        \"name\": \"sumi-docs-postman\",\n        \"version\": \"1.0.0\"\n      },\n      \"io.modelcontextprotocol/clientCapabilities\": {}\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{mcp_url}}"
+      },
+      "response": []
+    },
+    {
+      "name": "List docs",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('documentation catalog is returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  const docs = JSON.parse(body.result.content[0].text);",
+              "  pm.expect(docs).to.be.an('array').that.is.not.empty;",
+              "  pm.expect(docs.some((doc) => doc.path === pm.variables.get('document_path'))).to.be.true;",
+              "  pm.expect(body.result._meta.protocolVersion).to.eql(pm.variables.get('protocol_version'));",
+              "});",
+              "pm.test('list_docs creates no server session', function () {",
+              "  pm.expect(pm.response.headers.has('Mcp-Session-Id')).to.be.false;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, text/event-stream"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "MCP-Protocol-Version",
+            "value": "{{protocol_version}}"
+          },
+          {
+            "key": "MCP-Method",
+            "value": "tools/call"
+          },
+          {
+            "key": "MCP-Name",
+            "value": "list_docs"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 3,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"list_docs\",\n    \"arguments\": {},\n    \"_meta\": {\n      \"io.modelcontextprotocol/protocolVersion\": \"{{protocol_version}}\",\n      \"io.modelcontextprotocol/clientInfo\": {\n        \"name\": \"sumi-docs-postman\",\n        \"version\": \"1.0.0\"\n      },\n      \"io.modelcontextprotocol/clientCapabilities\": {}\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{mcp_url}}"
+      },
+      "response": []
+    },
+    {
+      "name": "Search docs",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('lexical search results are returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  const results = JSON.parse(body.result.content[0].text);",
+              "  pm.expect(results).to.be.an('array');",
+              "  pm.expect(body.result._meta.protocolVersion).to.eql(pm.variables.get('protocol_version'));",
+              "});",
+              "pm.test('search_docs creates no server session', function () {",
+              "  pm.expect(pm.response.headers.has('Mcp-Session-Id')).to.be.false;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, text/event-stream"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "MCP-Protocol-Version",
+            "value": "{{protocol_version}}"
+          },
+          {
+            "key": "MCP-Method",
+            "value": "tools/call"
+          },
+          {
+            "key": "MCP-Name",
+            "value": "search_docs"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 4,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"search_docs\",\n    \"arguments\": {\n      \"query\": \"{{search_query}}\"\n    },\n    \"_meta\": {\n      \"io.modelcontextprotocol/protocolVersion\": \"{{protocol_version}}\",\n      \"io.modelcontextprotocol/clientInfo\": {\n        \"name\": \"sumi-docs-postman\",\n        \"version\": \"1.0.0\"\n      },\n      \"io.modelcontextprotocol/clientCapabilities\": {}\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{mcp_url}}"
+      },
+      "response": []
+    },
+    {
+      "name": "Fetch doc",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('one documentation page is returned', function () {",
+              "  pm.response.to.have.status(200);",
+              "  const body = pm.response.json();",
+              "  const doc = JSON.parse(body.result.content[0].text);",
+              "  pm.expect(doc.path).to.eql(pm.variables.get('document_path'));",
+              "  pm.expect(doc.content).to.be.a('string').that.is.not.empty;",
+              "  pm.expect(body.result._meta.protocolVersion).to.eql(pm.variables.get('protocol_version'));",
+              "});",
+              "pm.test('fetch_doc creates no server session', function () {",
+              "  pm.expect(pm.response.headers.has('Mcp-Session-Id')).to.be.false;",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json, text/event-stream"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "MCP-Protocol-Version",
+            "value": "{{protocol_version}}"
+          },
+          {
+            "key": "MCP-Method",
+            "value": "tools/call"
+          },
+          {
+            "key": "MCP-Name",
+            "value": "fetch_doc"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"jsonrpc\": \"2.0\",\n  \"id\": 5,\n  \"method\": \"tools/call\",\n  \"params\": {\n    \"name\": \"fetch_doc\",\n    \"arguments\": {\n      \"path\": \"{{document_path}}\"\n    },\n    \"_meta\": {\n      \"io.modelcontextprotocol/protocolVersion\": \"{{protocol_version}}\",\n      \"io.modelcontextprotocol/clientInfo\": {\n        \"name\": \"sumi-docs-postman\",\n        \"version\": \"1.0.0\"\n      },\n      \"io.modelcontextprotocol/clientCapabilities\": {}\n    }\n  }\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": "{{mcp_url}}"
+      },
+      "response": []
+    }
+  ]
+}

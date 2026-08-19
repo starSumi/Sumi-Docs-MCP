@@ -11,6 +11,7 @@ const result = await build({
   minify: true,
   sourcemap: false,
   legalComments: "eof",
+  external: ["@modelcontextprotocol/node"],
   metafile: true,
 });
 

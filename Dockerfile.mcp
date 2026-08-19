@@ -1,0 +1,68 @@
+# syntax=docker/dockerfile:1.7
+
+FROM node:25.5.0-bookworm-slim AS build
+
+ENV PNPM_HOME=/pnpm
+ENV PATH=$PNPM_HOME:$PATH
+
+WORKDIR /workspace
+
+RUN corepack enable \
+    && corepack prepare pnpm@10.26.0 --activate \
+    && pnpm --version
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
+COPY packages/corpus-contract/package.json packages/corpus-contract/package.json
+COPY packages/mcp/package.json packages/mcp/package.json
+
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm --filter @sumi-os/docs-mcp... install \
+      --frozen-lockfile \
+      --ignore-scripts
+
+COPY packages/corpus-contract packages/corpus-contract
+COPY packages/mcp packages/mcp
+
+RUN pnpm --filter @sumi-os/corpus-contract build \
+    && pnpm --filter @sumi-os/docs-mcp build \
+    && pnpm --filter @sumi-os/docs-mcp deploy \
+      --prod \
+      --legacy \
+      /opt/sumi-docs
+
+FROM node:25.5.0-bookworm-slim AS runtime
+
+ARG VCS_REF=""
+
+LABEL org.opencontainers.image.title="Sumi Docs MCP" \
+      org.opencontainers.image.description="Read-only Sumi Docs MCP server" \
+      org.opencontainers.image.source="https://github.com/starSumi/Sumi-Docs-MCP" \
+      org.opencontainers.image.version="0.1.0" \
+      org.opencontainers.image.revision=$VCS_REF \
+      org.opencontainers.image.licenses="MIT"
+
+ENV NODE_ENV=production \
+    SUMI_DOCS_SOURCE=/data/docs \
+    SUMI_DOCS_HTTP_HOST=0.0.0.0 \
+    SUMI_DOCS_HTTP_PORT=3000 \
+    SUMI_DOCS_HTTP_PATH=/mcp \
+    SUMI_DOCS_ALLOWED_HOSTS=localhost,127.0.0.1 \
+    SUMI_DOCS_BUILD_REVISION=$VCS_REF
+
+WORKDIR /opt/sumi-docs
+
+COPY --from=build --chown=node:node /opt/sumi-docs/ ./
+COPY --from=build --chown=node:node \
+  /workspace/packages/mcp/scripts/container-entrypoint.mjs \
+  ./scripts/container-entrypoint.mjs
+COPY --chown=node:node docs/ /data/docs/
+
+USER node
+
+EXPOSE 3000
+STOPSIGNAL SIGTERM
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD ["node", "-e", "fetch('http://127.0.0.1:3000/readyz').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+
+ENTRYPOINT ["node", "scripts/container-entrypoint.mjs"]

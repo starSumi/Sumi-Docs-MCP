@@ -5,6 +5,14 @@ This file records user-visible changes. Internal phase notes are retained under
 
 ## Unreleased
 
+- Added stateless Streamable HTTP to the Node.js distribution while preserving
+  stdio as the default and SEA transport.
+- Required the 2026 protocol version metadata on every Streamable HTTP POST and
+  normalized header mismatches and malformed JSON as JSON-RPC errors.
+- Made the repository's reviewed `docs/` corpus the primary self-hosted example
+  and documented source, page, and MCP endpoint addresses separately.
+- Assigned versioned authorities for MCP, tool schemas, corpus manifests,
+  TypeScript API docs, Web behavior, and a future Rust parity implementation.
 - Replaced the host-sensitive cold-start maximum with an interleaved raw, SDK,
   and product benchmark plus a calibrated product-over-SDK release policy.
 - Made the `serve` documentation source optional through bounded Git-aware

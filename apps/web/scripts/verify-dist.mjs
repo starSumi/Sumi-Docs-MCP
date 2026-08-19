@@ -16,6 +16,10 @@ import {
   prefixSiteRoute,
   resolveSiteDeployment,
 } from "../src/site-config.ts";
+import {
+  resolveRemoteMcpEnvironment,
+  serializeRemoteServerMetadata,
+} from "../integrations/sumi-docs-publisher.mjs";
 
 const outputRoot = resolve("dist");
 const basePath = normalizeSiteBasePath(process.env.BASE_PATH);
@@ -23,6 +27,14 @@ const publicBaseUrl = process.env.SITE_URL
   ? resolveSiteDeployment(process.env.SITE_URL, basePath).publicBaseUrl
   : new URL(basePath, "http://127.0.0.1:4321/").href;
 const machineRoot = resolve(outputRoot, "_mcp");
+const mcpPackage = JSON.parse(
+  await readFile(resolve("../../packages/mcp/package.json"), "utf8"),
+);
+const remoteMcp = resolveRemoteMcpEnvironment({
+  publicMcpUrl: process.env.PUBLIC_MCP_URL,
+  publicMcpReadinessUrl: process.env.PUBLIC_MCP_READINESS_URL,
+  version: mcpPackage.version,
+});
 const manifest = JSON.parse(
   await readFile(resolve(machineRoot, "sumi-docs-manifest.json"), "utf8"),
 );
@@ -171,6 +183,26 @@ const logicalRoute = (deployedPath) => {
     : `/${deployedPath.slice(basePath.length)}`;
 };
 const outputFiles = new Set(await discoverFiles(outputRoot));
+
+const expectedRemoteServer = remoteMcp
+  ? serializeRemoteServerMetadata(remoteMcp)
+  : undefined;
+let actualRemoteServer;
+try {
+  actualRemoteServer = await readFile(
+    resolve(machineRoot, "server.json"),
+    "utf8",
+  );
+} catch (error) {
+  if (error?.code !== "ENOENT") throw error;
+}
+assert.equal(
+  actualRemoteServer,
+  expectedRemoteServer,
+  remoteMcp
+    ? "Remote MCP discovery metadata differs from the configured endpoint"
+    : "Remote MCP discovery metadata exists without endpoint configuration",
+);
 
 for (const document of manifest.documents) {
   assert.match(document, /^[a-zA-Z0-9_/-]+\.mdx?$/);

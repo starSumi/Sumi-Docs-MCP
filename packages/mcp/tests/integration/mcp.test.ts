@@ -12,6 +12,7 @@ import {
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
 import { DocsMcpServer, SERVER_INSTRUCTIONS } from "../../src/mcp/server.js";
 import { DocsVault } from "../../src/vfs/DocsVault.js";
+import { VERSION } from "../../src/version.js";
 
 async function createFixture(root: string): Promise<void> {
   await mkdir(root, { recursive: true });
@@ -106,6 +107,10 @@ test("MCP tools list, search, and fetch round-trip over JSON-RPC", async () => {
       SERVER_INSTRUCTIONS,
     );
     assert.ok(SERVER_INSTRUCTIONS.length <= 512);
+    assert.match(SERVER_INSTRUCTIONS, /before scanning documentation files/);
+    assert.match(SERVER_INSTRUCTIONS, /Source and tests remain authoritative/);
+    assert.match(SERVER_INSTRUCTIONS, /host permission control/);
+    assert.match(SERVER_INSTRUCTIONS, /client checkpoint persistence/);
     await clientTransport.send({
       jsonrpc: "2.0",
       method: "notifications/initialized",
@@ -362,6 +367,14 @@ test("stdio entry normalizes a 2026 first-request validation error without initi
     const result = listed.result as Record<string, unknown>;
     assert.equal(Array.isArray(result.tools), true);
     assert.equal(typeof result._meta, "object");
+    assert.equal(
+      (
+        (result._meta as Record<string, unknown>)[
+          "io.modelcontextprotocol/serverInfo"
+        ] as Record<string, unknown>
+      ).version,
+      VERSION,
+    );
 
     const discovered = await sendAndWait(clientTransport, 15, {
       jsonrpc: "2.0",

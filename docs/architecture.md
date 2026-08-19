@@ -11,7 +11,7 @@ The human surface keeps English at the root for stable existing links and
 serves a complete Simplified Chinese translation at `/zh-cn/`. Starlight's
 language selector switches between equivalent pages, while its theme selector
 supports light, dark, and automatic system preference. These presentation
-features do not change the MCP manifest or stdio protocol.
+features do not change the MCP manifest or either MCP transport.
 
 Manifest v1 represents Chinese machine documents with explicit
 paths such as `zh-cn/getting-started.md`. MCP clients can fetch that exact path,
@@ -27,7 +27,9 @@ reviewed docs/ + content catalog + OpenAPI
         +-- publishing integration -> v1 + immutable v2 snapshot
                                               |
                                               v
-                                      Sumi-Docs-MCP over stdio
+                                  one read-only DocsMcpServer core
+                                  /                           \
+                              stdio                 Streamable HTTP
 ```
 
 ## Ownership
@@ -35,8 +37,26 @@ reviewed docs/ + content catalog + OpenAPI
 The website owns rendering, navigation, accessibility, browser search, and the
 published corpus projection. The corpus-contract package owns pure manifest
 validation and canonicalization. Sumi-Docs-MCP owns bounded acquisition,
-non-executing document parsing, public tools, input validation, and stdio
-transport.
+non-executing document parsing, public tools, input validation, and stdio plus
+stateless Streamable HTTP adapters.
+
+## Address and client model
+
+Stable document identity, source acquisition, browser route, and MCP endpoint
+are four separate layers. The reviewed `docs/` files and catalog are the source
+of truth. The Web publisher derives rendered pages and immutable corpus
+snapshots; MCP derives a read-only query surface. An agent host is the MCP
+client, not another content authority.
+
+Stdio loads the corpus on the first content tool call. Streamable HTTP loads one
+bounded snapshot before listening, then creates a fresh protocol server for each
+request backed by that immutable process-local snapshot. Neither transport
+retains client or conversation state.
+
+A local directory snapshot has no wire revision. Revision equality is therefore
+enforced only when the MCP service acquires the Web publisher's immutable v2
+manifest. Local source mode is checked against the reviewed catalog and tool
+contract by integration tests instead of inventing a second revision algorithm.
 
 ## Workspace boundary
 

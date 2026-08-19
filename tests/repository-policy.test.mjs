@@ -14,6 +14,8 @@ import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 
+import { parse } from "yaml";
+
 import {
   catalogPublisherDocuments,
   contentCatalog,
@@ -99,6 +101,65 @@ test("tracked host adapter validation requires the complete supported set", () =
   assert.deepEqual(errors, [
     `Required host adapter is not tracked: ${complete[0].path}`,
   ]);
+});
+
+test("project Skills have canonical metadata and host prompts", () => {
+  for (const name of ["sumi-docs-use", "sumi-docs-pr"]) {
+    const skillPath = `.agents/skills/${name}/SKILL.md`;
+    const source = readFileSync(skillPath, "utf8").replaceAll("\r\n", "\n");
+    const frontmatterMatch = /^---\n([\s\S]+?)\n---\n/u.exec(source);
+    assert.ok(frontmatterMatch, `${skillPath} requires YAML frontmatter.`);
+    const frontmatter = parse(frontmatterMatch[1]);
+    assert.equal(frontmatter.name, name);
+    assert.match(frontmatter.description, /Use when/u);
+
+    const metadataPath = `.agents/skills/${name}/agents/openai.yaml`;
+    const metadata = parse(readFileSync(metadataPath, "utf8"));
+    assert.equal(typeof metadata.interface.display_name, "string");
+    assert.ok(
+      metadata.interface.short_description.length >= 25 &&
+        metadata.interface.short_description.length <= 64,
+    );
+    assert.match(
+      metadata.interface.default_prompt,
+      new RegExp(`\\$${name}`, "u"),
+    );
+  }
+});
+
+test("active SEA smoke instructions pass executable options to pnpm scripts", () => {
+  const instructionPaths = [
+    "packages/mcp/AGENTS.md",
+    "packages/mcp/docs/development.md",
+    "packages/mcp/docs/releasing.md",
+    "packages/mcp/examples/basic/docs/development.md",
+    "packages/mcp/examples/basic/docs/releasing.md",
+  ];
+
+  for (const path of instructionPaths) {
+    const source = readFileSync(path, "utf8");
+    assert.doesNotMatch(source, /example:smoke -- --executable/u, path);
+    assert.match(source, /example:smoke --executable/u, path);
+  }
+});
+
+test("GitHub issue forms preserve unique structured inputs", () => {
+  for (const file of ["bug-report.yml", "feature-proposal.yml"]) {
+    const form = parse(readFileSync(`.github/ISSUE_TEMPLATE/${file}`, "utf8"));
+    assert.equal(typeof form.name, "string");
+    assert.equal(typeof form.description, "string");
+    assert.ok(Array.isArray(form.body) && form.body.length > 0);
+    const ids = form.body.flatMap((entry) =>
+      typeof entry.id === "string" ? [entry.id] : [],
+    );
+    assert.equal(new Set(ids).size, ids.length);
+  }
+
+  const config = parse(
+    readFileSync(".github/ISSUE_TEMPLATE/config.yml", "utf8"),
+  );
+  assert.equal(config.blank_issues_enabled, false);
+  assert.match(config.contact_links[0].url, /\/security\/advisories\/new$/u);
 });
 
 test("git index parsing is NUL-safe", () => {
@@ -537,8 +598,8 @@ test("README translations require an exact confirmed content pair", () => {
 });
 
 test("the content catalog drives a complete bilingual freshness baseline", () => {
-  assert.equal(DOC_TRANSLATION_PATHS.length, 34);
-  assert.equal(new Set(DOC_TRANSLATION_PATHS).size, 34);
+  assert.equal(DOC_TRANSLATION_PATHS.length, 38);
+  assert.equal(new Set(DOC_TRANSLATION_PATHS).size, 38);
   assert.ok(DOC_TRANSLATION_PATHS.every((path) => path.startsWith("docs/")));
 
   const contents = new Map(
@@ -613,6 +674,10 @@ test("Oxlint is the single repository lint engine", () => {
   assert.equal(config.rules["no-unused-vars"], "error");
   assert.equal(config.rules["typescript/no-explicit-any"], "error");
   assert.equal(config.options.reportUnusedDisableDirectives, "error");
+  const astroOverride = config.overrides.find((override) =>
+    override.files?.includes("**/*.astro"),
+  );
+  assert.deepEqual(astroOverride?.globals, { Astro: "readonly" });
 });
 
 test("duplicate-code growth is bounded by one root policy", () => {
@@ -665,9 +730,21 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   weakened.ci.jobs.verify.steps = weakened.ci.jobs.verify.steps.filter(
     (step) => step.name !== "Install the pinned package manager",
   );
+  weakened.ci.jobs.container.steps.find(
+    (step) => step.name === "Exercise the hardened container boundary",
+  ).run = "docker run sumi-docs-mcp:acceptance";
   weakened.pages.jobs.build.steps.find(
     (step) => step.name === "Build and verify site",
   ).env.BASE_PATH = "/unreviewed/";
+  delete weakened.pages.jobs.build.steps.find(
+    (step) => step.name === "Build and verify site",
+  ).env.PUBLIC_MCP_URL;
+  delete weakened.pages.jobs.build.steps.find(
+    (step) => step.name === "Build and verify site",
+  ).env.PUBLIC_MCP_READINESS_URL;
+  weakened.pages.jobs.build.steps.find(
+    (step) => step.name === "Verify configured remote MCP readiness",
+  ).run = "echo skipped";
   weakened.pages.jobs.build.steps.find(
     (step) => step.name === "Upload verified Pages artifact",
   ).with.path = ".";
@@ -681,7 +758,9 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   assert.ok(errors.some((error) => error.includes("compliance material")));
   assert.ok(errors.some((error) => error.includes("built SEA binary")));
   assert.ok(errors.some((error) => error.includes("pinned pnpm")));
+  assert.ok(errors.some((error) => error.includes("stateless MCP container")));
   assert.ok(errors.some((error) => error.includes("configured origin/base")));
+  assert.ok(errors.some((error) => error.includes("bind remote MCP")));
   assert.ok(errors.some((error) => error.includes("verified Web artifact")));
   assert.ok(errors.some((error) => error.includes("deployment authority")));
 });
@@ -722,6 +801,31 @@ test("Pages publication fails closed after an upstream failure", () => {
       validateWorkflowPolicy(weakened).some((error) =>
         error.includes(testCase.expected),
       ),
+    );
+  }
+});
+
+test("container acceptance rejects weakened protocol and lifecycle checks", () => {
+  const exact = loadWorkflowPolicyInput();
+  const variants = [
+    ["accept: application/json, text/event-stream", "accept: application/json"],
+    [".buildRevision == $revision", '.status == "ready"'],
+    ["docker stop --time 10", "docker rm --force"],
+    [".State.ExitCode", ".State.Running"],
+  ];
+
+  for (const [required, weakenedValue] of variants) {
+    const weakened = structuredClone(exact);
+    const step = weakened.ci.jobs.container.steps.find(
+      (candidate) =>
+        candidate.name === "Exercise the hardened container boundary",
+    );
+    step.run = step.run.replace(required, weakenedValue);
+    assert.ok(
+      validateWorkflowPolicy(weakened).some((error) =>
+        error.includes("stateless MCP container"),
+      ),
+      required,
     );
   }
 });

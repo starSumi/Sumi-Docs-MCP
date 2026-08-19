@@ -25,5 +25,6 @@ is one of `PATH_NOT_FOUND`, `INVALID_INPUT`, or `PARSE_ERROR`; absolute paths an
 stack traces are not exposed. Successful and failed results also identify the
 MCP protocol version and server capabilities in `_meta`.
 
-The first content tool call loads one read-only corpus snapshot. Later calls
-reuse that snapshot until the process exits, so source changes require a restart.
+Stdio loads one read-only corpus snapshot on the first content tool call.
+Streamable HTTP loads the same snapshot before listening. Later calls reuse it
+until the process exits, so source changes require a restart.

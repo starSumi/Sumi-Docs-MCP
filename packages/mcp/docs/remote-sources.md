@@ -1,8 +1,8 @@
 # Remote documentation sources
 
-Remote mode reads a bounded, immutable corpus snapshot from an HTTP host. It
-uses the same stdio MCP transport and the same four tools as local directory
-mode. It is a source mode, not an HTTP MCP transport.
+Remote mode reads a bounded, immutable corpus snapshot from an HTTP host. It is
+a source mode, not a transport choice: the same snapshot and four tools can be
+served through stdio or stateless Streamable HTTP.
 
 ## Manifest
 
@@ -48,6 +48,11 @@ with credentials, query strings, or fragments are rejected. Authentication
 headers and cookies are not supported; publish the corpus on a host the MCP
 process can read without credentials.
 
+The loader consumes reviewed Markdown or MDX declared by the manifest. It does
+not crawl HTML, execute DOM content, or heuristically clean arbitrary Web pages.
+An external ingestion system must normalize and review such content before it
+enters the publisher contract.
+
 ## Resource limits
 
 The loader applies these fixed limits before parsing:
@@ -62,10 +67,10 @@ The loader applies these fixed limits before parsing:
 | Parallel downloads         |             8 |
 | One request                |    10 seconds |
 
-All documents are downloaded and parsed during the first content tool call.
-The snapshot is reused until process exit. Restart the process to pick up remote
-changes. One failed, oversized, invalid, or redirected response rejects the
-whole snapshot.
+Stdio downloads and parses all documents during the first content tool call.
+Streamable HTTP performs the same bounded load before listening. The snapshot is
+reused until process exit. Restart the process to pick up remote changes. One
+failed, oversized, invalid, or redirected response rejects the whole snapshot.
 
 ## Machine and human URLs
 
@@ -79,6 +84,18 @@ node dist/index.js serve https://raw.example.com/product/ --base-url https://doc
 
 The resulting `url` values use the rendered site prefix and extensionless
 document paths. The server does not check that those pages exist.
+
+The MCP endpoint is a fourth, independent address. A complete deployment may
+use:
+
+```text
+https://docs.example.com/                       rendered Web pages
+https://docs.example.com/_mcp/v2/current.json  machine corpus locator
+https://mcp.example.com/mcp                    Streamable HTTP MCP endpoint
+```
+
+A reverse proxy may mount the endpoint at `https://docs.example.com/mcp`, but a
+static host such as GitHub Pages can publish only the first two addresses.
 
 ## Local remote-mode exercise
 

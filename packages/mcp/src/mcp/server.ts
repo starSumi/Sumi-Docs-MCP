@@ -7,11 +7,11 @@ import { buildDocumentUrl, normalizeBaseUrl } from "../utils/document-url.js";
 import { sanitizeDiagnostic } from "../utils/diagnostics.js";
 import { VERSION } from "../version.js";
 
-const PROTOCOL_VERSION = "2026-07-28";
+export const PROTOCOL_VERSION = "2026-07-28";
 const CAPABILITIES = ["tools"];
 
 export const SERVER_INSTRUCTIONS =
-  "Sumi Docs is a read-only documentation server. Use list_docs to discover exact document paths, search_docs for lexical keyword lookup, fetch_doc with a listed path for full content, and get_openapi_spec for the loaded OpenAPI 3.x document. Do not claim semantic search or source mutation. Results come from one process-local snapshot; after source changes, restart the server before treating results as current.";
+  "Sumi Docs is a read-only documentation server. For product and architecture questions, use list_docs to discover paths, search_docs for lexical lookup, and fetch_doc for full content before scanning documentation files. Use get_openapi_spec for OpenAPI 3.x. Source and tests remain authoritative for implementation state. Do not claim semantic search, source mutation, host permission control, or client checkpoint persistence. Restart after source changes because results use one process-local snapshot.";
 
 export interface DocsMcpServerOptions {
   baseUrl?: string;
