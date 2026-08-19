@@ -33,10 +33,11 @@ snapshot and does not live reload.
 
 ## Project Skills and direct MCP use
 
-Codex discovers the reviewed `$sumi-docs-use` and `$sumi-docs-pr` workflows from
-`.agents/skills/` when their task descriptions apply. Claude Code can read the
-same canonical files through the repository instructions. They cover setup and
-pull-request preparation; neither is required for ordinary documentation
+Codex discovers the reviewed `$sumi-docs-use`, `$sumi-docs-pr`, and
+`$sumi-docs-audit` workflows from `.agents/skills/` when their task descriptions
+apply. Claude Code can read the same canonical files through the repository
+instructions. They cover setup, pull-request preparation, and read-only
+repository or release auditing; none is required for ordinary documentation
 queries.
 
 ## Direct MCP use
