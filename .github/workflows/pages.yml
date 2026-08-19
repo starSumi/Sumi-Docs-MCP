@@ -62,7 +62,7 @@ jobs:
 
       - name: Confirm deployment source is still current
         id: freshness
-        if: ${{ !cancelled() }}
+        if: ${{ success() && !cancelled() }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -76,7 +76,7 @@ jobs:
           fi
 
       - name: Upload verified Pages artifact
-        if: ${{ !cancelled() && steps.freshness.outputs.current == 'true' }}
+        if: ${{ success() && !cancelled() && steps.freshness.outputs.current == 'true' }}
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: apps/web/dist
@@ -84,7 +84,7 @@ jobs:
 
   deploy:
     name: Deploy current main
-    if: ${{ github.ref == 'refs/heads/main' && !cancelled() }}
+    if: ${{ github.ref == 'refs/heads/main' && success() && !cancelled() }}
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
