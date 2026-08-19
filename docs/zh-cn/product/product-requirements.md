@@ -60,6 +60,6 @@ package 边界。
 文件和性能证据全部绑定到该 commit。公开可见性、tag、package、部署和 Release 是独立
 提升动作，必须先通过 CP6 人工验收。
 
-参见[检查点协议](../../operations/checkpoints.md)、
-[发布就绪](../../operations/release-readiness.md)和
-[评估矩阵](../../operations/evaluation-matrix.md)。
+参见[检查点协议](../../operations/checkpoints/)、
+[发布就绪](../../operations/release-readiness/)和
+[评估矩阵](../../operations/evaluation-matrix/)。

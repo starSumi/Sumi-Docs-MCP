@@ -15,8 +15,8 @@ description: 在新的维护会话开始时安全地重建当前状态。
 6. 保留无关改动，只暂存本次任务的精确路径。
 7. 在同一个干净候选提交上重新运行并从远程 CI 回读之前，本地通过结果只能视为临时证据。
 
-随后阅读[产品需求](../product/product-requirements.md)、[检查点协议](checkpoints.md)、
-[发布清单](release-readiness.md)和[评估矩阵](evaluation-matrix.md)。这些文档定义工作
+随后阅读[产品需求](../../product/product-requirements/)、[检查点协议](../checkpoints/)、
+[发布清单](../release-readiness/)和[评估矩阵](../evaluation-matrix/)。这些文档定义工作
 路径；实时 Git 与 CI 证据决定当前状态。
 
 ## 状态放置

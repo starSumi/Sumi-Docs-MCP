@@ -14,6 +14,7 @@ const ACTIVE_WORKFLOWS = new Set([
   "candidate.yml",
   "ci.yml",
   "operations-observe.yml",
+  "pages.yml",
 ]);
 
 function workflowSteps(workflow) {
@@ -63,6 +64,7 @@ export function validateWorkflowPolicy({
   ci,
   candidate,
   operations,
+  pages,
   rootWorkflowNames,
   nestedWorkflowPaths,
 }) {
@@ -71,6 +73,7 @@ export function validateWorkflowPolicy({
     "ci.yml": ci,
     "candidate.yml": candidate,
     "operations-observe.yml": operations,
+    "pages.yml": pages,
   };
 
   for (const [name, workflow] of Object.entries(workflows)) {
@@ -146,6 +149,18 @@ export function validateWorkflowPolicy({
     errors.push("Candidate build must not hold or use attestation authority.");
   }
   const buildSteps = workflowSteps({ jobs: { build } });
+  const verifyCandidate = buildSteps.find(
+    (step) => step.name === "Verify candidate source",
+  );
+  if (
+    verifyCandidate?.env?.SITE_URL !== "${{ inputs.site_url }}" ||
+    verifyCandidate?.env?.BASE_PATH !== "${{ inputs.site_base }}" ||
+    candidate.on?.workflow_dispatch?.inputs?.site_base?.required !== true
+  ) {
+    errors.push(
+      "Candidate builds must bind the reviewed site origin and base path.",
+    );
+  }
   const performance = buildSteps.find((step) => step.id === "performance");
   const packageCandidate = buildSteps.find(
     (step) => step.name === "Package candidate",
@@ -299,6 +314,91 @@ export function validateWorkflowPolicy({
     );
   }
 
+  if (
+    !sameKeys(pages.permissions, ["contents"]) ||
+    pages.permissions.contents !== "read"
+  ) {
+    errors.push(
+      "Pages workflow-level permissions must be contents: read only.",
+    );
+  }
+  if (
+    pages.concurrency?.group !== "documentation-pages-${{ github.workflow }}" ||
+    pages.concurrency?.["cancel-in-progress"] !== true
+  ) {
+    errors.push(
+      "Pages concurrency must cancel superseded deployments globally.",
+    );
+  }
+  const pagesBuild = pages.jobs?.build;
+  const pagesDeploy = pages.jobs?.deploy;
+  validatePnpmLifecycle("Pages", "build", pagesBuild, errors);
+  if (
+    !String(pagesBuild?.if ?? "").includes("refs/heads/main") ||
+    !String(pagesBuild?.if ?? "").includes("!cancelled()")
+  ) {
+    errors.push("Pages build must be current-main and cancellation aware.");
+  }
+  const pagesBuildSteps = workflowSteps({ jobs: { build: pagesBuild } });
+  const configurePages = pagesBuildSteps.find(
+    (step) => step.name === "Configure GitHub Pages",
+  );
+  const buildSite = pagesBuildSteps.find(
+    (step) => step.name === "Build and verify site",
+  );
+  const pagesFreshness = pagesBuildSteps.find(
+    (step) => step.id === "freshness",
+  );
+  const uploadPages = pagesBuildSteps.find((step) =>
+    step.uses?.startsWith("actions/upload-pages-artifact@"),
+  );
+  if (
+    configurePages?.id !== "pages" ||
+    buildSite?.env?.SITE_URL !== "${{ steps.pages.outputs.origin }}" ||
+    buildSite?.env?.BASE_PATH !== "${{ steps.pages.outputs.base_path }}" ||
+    !String(buildSite?.run ?? "").includes("verify:release") ||
+    !String(buildSite?.run ?? "").includes("verify:integration")
+  ) {
+    errors.push(
+      "Pages build must use configured origin/base outputs and release gates.",
+    );
+  }
+  if (
+    !String(pagesFreshness?.if ?? "").includes("!cancelled()") ||
+    !String(uploadPages?.if ?? "").includes("!cancelled()") ||
+    !String(uploadPages?.if ?? "").includes("freshness.outputs.current") ||
+    uploadPages?.with?.path !== "apps/web/dist"
+  ) {
+    errors.push(
+      "Pages upload must contain only a fresh verified Web artifact.",
+    );
+  }
+  if (
+    pagesDeploy?.needs !== "build" ||
+    pagesDeploy?.environment?.name !== "github-pages" ||
+    pagesDeploy?.environment?.url !==
+      "${{ steps.deployment.outputs.page_url }}" ||
+    !String(pagesDeploy?.if ?? "").includes("refs/heads/main") ||
+    !String(pagesDeploy?.if ?? "").includes("!cancelled()") ||
+    !sameKeys(pagesDeploy?.permissions, ["contents", "id-token", "pages"]) ||
+    pagesDeploy.permissions.contents !== "read" ||
+    pagesDeploy.permissions.pages !== "write" ||
+    pagesDeploy.permissions["id-token"] !== "write"
+  ) {
+    errors.push(
+      "Pages deploy must be main-only and hold only deployment authority.",
+    );
+  }
+  const pagesDeploySteps = workflowSteps({ jobs: { deploy: pagesDeploy } });
+  if (
+    pagesDeploySteps.length !== 1 ||
+    !pagesDeploySteps[0]?.uses?.startsWith("actions/deploy-pages@")
+  ) {
+    errors.push(
+      "Pages deploy job must only deploy the reviewed Pages artifact.",
+    );
+  }
+
   return errors;
 }
 
@@ -327,6 +427,7 @@ export function loadWorkflowPolicyInput(root = process.cwd()) {
     ci: load("ci.yml"),
     candidate: load("candidate.yml"),
     operations: load("operations-observe.yml"),
+    pages: load("pages.yml"),
     rootWorkflowNames: readdirSync(workflowRoot)
       .filter((name) => /\.ya?ml$/iu.test(name))
       .sort(),

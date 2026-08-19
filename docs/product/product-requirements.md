@@ -71,6 +71,6 @@ host-adapter, provenance, Web, executable, and performance evidence is bound to
 that commit. Public visibility, tags, packages, deployments, and Releases are
 separate promotion actions and require CP6 human acceptance.
 
-See [Checkpoint protocol](../operations/checkpoints.md),
-[Release readiness](../operations/release-readiness.md), and
-[Evaluation matrix](../operations/evaluation-matrix.md).
+See [Checkpoint protocol](../../operations/checkpoints/),
+[Release readiness](../../operations/release-readiness/), and
+[Evaluation matrix](../../operations/evaluation-matrix/).

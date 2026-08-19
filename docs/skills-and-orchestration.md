@@ -28,7 +28,7 @@ Local developers may install the optional `$sumi-docs-maintain` role in their
 global agent Skill catalog. Its activation must remain limited to the Sumi Docs
 project family. The repository does not ship or require that local role; the
 project MCP adapters provide the documentation-query fallback for Codex, Claude
-Code, and VS Code. See [Agent host integration](/agent-hosts/).
+Code, and VS Code. See [Agent host integration](../agent-hosts/).
 
 Open an issue before changing or adding a reusable integration. Include trigger and
 non-trigger examples, supported host versions, MCP prerequisites, the ordered
@@ -41,4 +41,4 @@ stateful orchestration, authenticated acquisition, or multi-agent control, it
 requires a separate architecture decision or service boundary rather than code
 inside the current read-only MCP server.
 
-For the full repository process, see [Contributing](/contributing/).
+For the full repository process, see [Contributing](../contributing/).

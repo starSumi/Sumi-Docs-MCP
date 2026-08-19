@@ -49,5 +49,5 @@ pnpm run verify:integration
 标记为 Ready。GitHub 已禁用 merge commit；维护者根据提交序列是否有独立评审价值选择
 squash 或 rebase merge。
 
-进一步阅读[开发](/zh-cn/development/)、[发布](/zh-cn/releasing/)和
-[Skills、MCP 与编排](/zh-cn/skills-and-orchestration/)。
+进一步阅读[开发](../development/)、[发布](../releasing/)和
+[Skills、MCP 与编排](../skills-and-orchestration/)。

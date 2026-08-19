@@ -26,9 +26,10 @@ pnpm --filter @sumi-os/docs-web dev
 The local site starts at `http://localhost:4321/` by default.
 
 Development does not require environment variables. A production deployment
-sets `SITE_URL` to its public HTTPS origin so canonical links and the sitemap do
-not use the loopback default. Start from `.env.example`; do not commit secrets or
-machine-specific `.env` files.
+sets `SITE_URL` to its public HTTPS origin and `BASE_PATH` to its root-relative
+deployment prefix so canonical links and the sitemap do not use development
+defaults. Start from `.env.example`; do not commit secrets or machine-specific
+`.env` files.
 
 ## Verification
 
@@ -79,6 +80,15 @@ Production candidates require an explicit public HTTPS origin:
 
 ```powershell
 $env:SITE_URL = "https://docs.example.com"
+$env:BASE_PATH = "/"
+pnpm run verify:release
+```
+
+GitHub Project Pages uses an origin and subpath instead:
+
+```powershell
+$env:SITE_URL = "https://starsumi.github.io"
+$env:BASE_PATH = "/Sumi-Docs-MCP/"
 pnpm run verify:release
 ```
 
@@ -88,6 +98,10 @@ GitHub provenance is conditional on repository plan support and explicit root
 workflow configuration. It does not deploy the site. See
 [docs/deployment.md](docs/deployment.md) for the human acceptance and rollback
 procedure.
+
+The root `Documentation site` workflow deploys the latest verified `main`
+commit to GitHub Pages. This does not publish the npm package, executable, tag,
+or GitHub Release.
 
 ## Architecture
 

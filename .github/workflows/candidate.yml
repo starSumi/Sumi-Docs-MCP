@@ -11,6 +11,11 @@ on:
         description: HTTPS origin used for generated canonical URLs
         required: true
         type: string
+      site_base:
+        description: Root-relative deployment base path
+        required: true
+        default: /
+        type: string
 
 permissions:
   contents: read
@@ -65,6 +70,7 @@ jobs:
       - name: Verify candidate source
         env:
           SITE_URL: ${{ inputs.site_url }}
+          BASE_PATH: ${{ inputs.site_base }}
         run: |
           pnpm run verify
           pnpm run verify:integration

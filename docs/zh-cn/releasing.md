@@ -10,11 +10,13 @@ Git 标签或 GitHub Release 仍然可以不存在。
 
 ```powershell
 $env:SITE_URL = "https://docs.example.com"
+$env:BASE_PATH = "/"
 pnpm --filter @sumi-os/docs-web verify:release
 pnpm run verify:integration
 ```
 
-手动 `Acceptance candidate` 工作流只接受 `main` 的最新完整 40 位提交 SHA。
+手动 `Acceptance candidate` 工作流只接受 `main` 最新提交的完整 40 位 SHA、公开源地址和
+部署基础路径。
 它在没有 OIDC 或 attestation 权限的 job 中运行发布套件，并上传静态归档、SHA-256
 校验和、原始性能证据、项目与运行时许可证、第三方声明和 CycloneDX 组件清单；它不会
 部署站点。
@@ -29,3 +31,7 @@ pnpm run verify:integration
 
 保留上一个已验收的不可变产物。回滚时恢复该产物或部署，然后重新验证根页面、
 本地化路由和 `/_mcp/` 投影。
+
+`Documentation site` 工作流会单独把经过验证的最新 `main` 提交部署到 GitHub Pages。
+它从 Pages 配置取得公开源地址和基础路径，并在上传前验证完整站点和 MCP 投影。Pages
+部署不会发布 npm 包、Windows 可执行文件、Git 标签或 GitHub Release。

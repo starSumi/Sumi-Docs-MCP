@@ -56,6 +56,6 @@ and changelog are current, and review threads are resolved. GitHub merge commits
 are disabled; maintainers choose squash or rebase merge according to whether an
 intentional commit sequence adds review value.
 
-Read [Development](/development/), [Releasing](/releasing/), and
-[Skills, MCP, and orchestration](/skills-and-orchestration/) for the boundaries
+Read [Development](../development/), [Releasing](../releasing/), and
+[Skills, MCP, and orchestration](../skills-and-orchestration/) for the boundaries
 behind these checks.

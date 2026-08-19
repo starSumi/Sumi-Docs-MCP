@@ -26,7 +26,18 @@ test("explicit manifest routes override path-derived URLs", () => {
       "guides/start.md",
       "/manual/getting-started/",
     ),
-    "https://docs.example.com/manual/getting-started/",
+    "https://docs.example.com/product/manual/getting-started/",
+  );
+});
+
+test("the logical root route resolves to the configured site prefix", () => {
+  assert.equal(
+    buildDocumentUrl(
+      "https://starsumi.github.io/Sumi-Docs-MCP/",
+      "index.mdx",
+      "/",
+    ),
+    "https://starsumi.github.io/Sumi-Docs-MCP/",
   );
 });
 

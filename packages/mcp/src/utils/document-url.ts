@@ -29,7 +29,10 @@ export function buildDocumentUrl(
   documentPath: string,
   route?: string,
 ): string {
-  if (route) return new URL(route, baseUrl).href;
+  if (route) {
+    const relativeRoute = route === "/" ? "" : route.replace(/^\/+/, "");
+    return new URL(relativeRoute, baseUrl).href;
+  }
 
   const segments = documentPath
     .replace(/\\/g, "/")
