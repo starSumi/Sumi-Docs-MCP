@@ -100,3 +100,81 @@ jobs:
 
       - name: Preview the MCP package boundary
         run: pnpm run pack:mcp
+
+  container:
+    name: Container acceptance
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the reviewed image
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker build \
+            --build-arg "VCS_REF=$GITHUB_SHA" \
+            --file Dockerfile.mcp \
+            --tag sumi-docs-mcp:acceptance \
+            .
+          test "$(docker image inspect sumi-docs-mcp:acceptance --format '{{.Config.User}}')" = 'node'
+
+      - name: Exercise the hardened container boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          container_id="$(docker run --detach \
+            --read-only \
+            --cap-drop ALL \
+            --security-opt no-new-privileges \
+            --tmpfs /tmp:rw,noexec,nosuid,nodev,size=16m \
+            --publish 127.0.0.1:3000:3000 \
+            sumi-docs-mcp:acceptance)"
+          cleanup() {
+            docker logs "$container_id" || true
+            docker rm --force "$container_id" >/dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+
+          test "$(docker inspect "$container_id" --format '{{.HostConfig.ReadonlyRootfs}}')" = 'true'
+          docker inspect "$container_id" --format '{{json .HostConfig.CapDrop}}' | grep -q 'ALL'
+          docker inspect "$container_id" --format '{{json .HostConfig.SecurityOpt}}' | grep -q 'no-new-privileges'
+
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error \
+              http://127.0.0.1:3000/readyz > ready.json; then
+              break
+            fi
+            if [[ "$attempt" = '30' ]]; then
+              exit 1
+            fi
+            sleep 1
+          done
+          jq --arg revision "$GITHUB_SHA" -e \
+            '.status == "ready" and .corpus.documentCount > 0 and .buildRevision == $revision' \
+            ready.json
+
+          curl --fail --silent --show-error \
+            --header 'Host: localhost:3000' \
+            http://127.0.0.1:3000/healthz > localhost-health.json
+          jq -e '.status == "ok"' localhost-health.json
+
+          curl --fail --silent --show-error \
+            --dump-header response-headers.txt \
+            --header 'accept: application/json, text/event-stream' \
+            --header 'content-type: application/json' \
+            --header 'mcp-protocol-version: 2026-07-28' \
+            --header 'mcp-method: tools/list' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"sumi-docs-container-ci","version":"1.0.0"},"io.modelcontextprotocol/clientCapabilities":{}}}}' \
+            http://127.0.0.1:3000/mcp > tools-list.json
+          jq -e '[.result.tools[].name] | sort == ["fetch_doc","get_openapi_spec","list_docs","search_docs"]' tools-list.json
+          grep -qi '^x-content-type-options: nosniff' response-headers.txt
+          if grep -qi '^mcp-session-id:' response-headers.txt; then
+            exit 1
+          fi
+
+          docker stop --time 10 "$container_id" >/dev/null
+          test "$(docker inspect "$container_id" --format '{{.State.ExitCode}}')" = '0'

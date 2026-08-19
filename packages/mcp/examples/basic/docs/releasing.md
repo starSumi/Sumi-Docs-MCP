@@ -16,7 +16,7 @@ pnpm run verify:integration
 pnpm run smoke:mcp
 pnpm run pack:mcp
 pnpm run build:sea
-pnpm --filter @sumi-os/docs-mcp example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm --filter @sumi-os/docs-mcp example:smoke --executable artifacts/bin/sumi-docs-mcp.exe
 pnpm run benchmark:cold-start --iterations 100 --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 

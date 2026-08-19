@@ -10,7 +10,7 @@ hosts.
 | Layer                   | Owns                                                                                         | Does not own                                                             |
 | ----------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | Skill                   | trigger conditions, usage procedure, prerequisites, examples, and validation                 | live documentation data, server authentication, or durable session state |
-| Sumi-Docs-MCP           | bounded document acquisition and the four read-only MCP tools                                | client routing, conversation memory, multi-agent delegation, or UI       |
+| Sumi-Docs-MCP           | bounded document acquisition and the four read-only MCP tools over stdio or Streamable HTTP  | client routing, conversation memory, multi-agent delegation, or UI       |
 | Agent host or workflow  | tool selection, sequencing, retries, delegation, approvals, and any client session           | document parsing and source access rules already owned by the MCP server |
 | Astro/Starlight site    | reviewed human pages and the public machine-readable projection                              | stdio transport, local file access, or agent execution                   |
 | BFF or service boundary | future browser credentials, authorization, and server-side sessions when explicitly designed | hidden expansion of the headless MCP contract                            |
@@ -18,6 +18,9 @@ hosts.
 The practical rule is: a Skill can teach an agent when to call `list_docs`,
 `search_docs`, `fetch_doc`, and `get_openapi_spec`; the MCP server performs
 those calls against a controlled corpus; the agent host decides the sequence.
+Stateless transport does not provide agent memory, checkpoint recovery, or host
+filesystem isolation. Those remain owned by the client host or a separately
+reviewed controller.
 
 ## A client-side Skill
 
@@ -36,12 +39,16 @@ server through the host's supported integration surface.
 
 ## Where a Skill belongs
 
-This repository does not currently ship a runtime Skill, so it does not create
-an `.agent/` or `.agents/skills/` directory. A client-specific Skill belongs in
-the owning client's or user's skill catalog, where its activation and update
-lifecycle can be tested. A future client-neutral example may live under
-`examples/skills/` only after at least one supported host, trigger contract,
-and verification path are documented.
+The product workspace ships the optional project Skills `$sumi-docs-use` and
+`$sumi-docs-pr` under the canonical `.agents/skills/` directory. They route
+setup, operation, and contribution workflows; they do not implement or proxy
+MCP. Broader maintainer behavior belongs in the local developer's governed
+global skill catalog and must activate only for the Sumi Docs project family.
+
+No Skill is required to query the server. The agent host is the MCP client and
+can discover the four tools from protocol initialization and `tools/list`.
+Agents should prefer these tools for ordinary documentation questions and
+inspect source and tests when changing or verifying implementation behavior.
 
 Do not add a directory merely because a loader recognizes its name. Classify
 the owner, lifecycle, security boundary, compatibility impact, validation, and

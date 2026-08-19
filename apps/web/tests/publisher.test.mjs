@@ -13,9 +13,11 @@ import { join, resolve } from "node:path";
 import test from "node:test";
 import {
   capturePublicationInputs,
+  createRemoteServerMetadata,
   createPublication,
   normalizePublisherOptions,
   publishProjection,
+  serializeRemoteServerMetadata,
 } from "../integrations/sumi-docs-publisher.mjs";
 import {
   catalogPublisherDocuments,
@@ -68,13 +70,13 @@ test("one reviewed catalog drives custom sidebar slugs and publisher routes", ()
   ]);
 });
 
-test("the product catalog preserves all 34 reviewed document variants", () => {
+test("the product catalog preserves all 38 reviewed document variants", () => {
   const options = normalizePublisherOptions({
     catalog: contentCatalog,
     openapi: "openapi.json",
   });
-  assert.equal(options.documents.length, 34);
-  assert.equal(new Set(options.documents.map(({ source }) => source)).size, 34);
+  assert.equal(options.documents.length, 38);
+  assert.equal(new Set(options.documents.map(({ source }) => source)).size, 38);
   const byIdentity = new Map(
     options.documents.map((entry) => [`${entry.id}:${entry.locale}`, entry]),
   );
@@ -98,6 +100,181 @@ test("the product catalog preserves all 34 reviewed document variants", () => {
       "zh-cn/configuration.md",
     ],
   );
+});
+
+test("remote MCP discovery accepts only an explicit public HTTPS endpoint", () => {
+  const options = normalizePublisherOptions({
+    catalog: catalog([document()]),
+    remoteMcp: {
+      url: "https://mcp.example.com/mcp",
+      readinessUrl: "https://mcp.example.com/readyz",
+      version: "0.1.0",
+    },
+  });
+  assert.deepEqual(options.remoteMcp, {
+    url: "https://mcp.example.com/mcp",
+    readinessUrl: "https://mcp.example.com/readyz",
+    version: "0.1.0",
+  });
+  assert.deepEqual(createRemoteServerMetadata(options.remoteMcp), {
+    $schema:
+      "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    name: "io.github.starsumi/sumi-docs-mcp",
+    title: "Sumi Docs MCP",
+    description:
+      "Read-only MCP access to the reviewed Sumi Docs documentation corpus.",
+    repository: {
+      url: "https://github.com/starSumi/Sumi-Docs-MCP",
+      source: "github",
+      subfolder: "packages/mcp",
+    },
+    version: "0.1.0",
+    remotes: [
+      {
+        type: "streamable-http",
+        url: "https://mcp.example.com/mcp",
+      },
+    ],
+  });
+
+  for (const remoteMcp of [
+    {
+      url: "http://127.0.0.1:3000/mcp",
+      readinessUrl: "https://mcp.example.com/readyz",
+      version: "0.1.0",
+    },
+    {
+      url: "https://user:secret@mcp.example.com/mcp",
+      readinessUrl: "https://mcp.example.com/readyz",
+      version: "0.1.0",
+    },
+    {
+      url: "https://mcp.example.com/mcp?token=secret",
+      readinessUrl: "https://mcp.example.com/readyz",
+      version: "0.1.0",
+    },
+    {
+      url: "https://mcp.example.com/mcp#fragment",
+      readinessUrl: "https://mcp.example.com/readyz",
+      version: "0.1.0",
+    },
+    {
+      url: "https://mcp.example.com/mcp",
+      readinessUrl: "http://mcp.example.com/readyz",
+      version: "0.1.0",
+    },
+    {
+      url: "https://mcp.example.com/mcp",
+      readinessUrl: "https://user:secret@mcp.example.com/readyz",
+      version: "0.1.0",
+    },
+    {
+      url: "https://mcp.example.com/mcp",
+      readinessUrl: "https://mcp.example.com/readyz?token=secret",
+      version: "0.1.0",
+    },
+    {
+      url: "https://mcp.example.com/mcp",
+      readinessUrl: "https://mcp.example.com/readyz#fragment",
+      version: "0.1.0",
+    },
+    {
+      url: "https://mcp.example.com/mcp",
+      readinessUrl: "https://mcp.example.com/readyz",
+      version: "latest",
+    },
+    {
+      url: "https://mcp.example.com/mcp",
+      readinessUrl: "https://mcp.example.com/readyz",
+      version: "0.1.0",
+      extra: true,
+    },
+    { url: "https://mcp.example.com/mcp", version: "0.1.0" },
+  ]) {
+    assert.throws(
+      () =>
+        normalizePublisherOptions({
+          catalog: catalog([document()]),
+          remoteMcp,
+        }),
+      /remote MCP/i,
+    );
+  }
+});
+
+test("remote MCP discovery is optional, exact, and covered by projection CAS", async () => {
+  const temporary = await mkdtemp(join(tmpdir(), "sumi-docs-discovery-"));
+  const contentRoot = resolve(temporary, "content");
+  const publicDir = resolve(temporary, "public");
+  const withoutRemoteRoot = resolve(temporary, "without-remote");
+  const withRemoteRoot = resolve(temporary, "with-remote");
+  try {
+    await Promise.all([
+      mkdir(resolve(contentRoot, "guides"), { recursive: true }),
+      mkdir(publicDir, { recursive: true }),
+    ]);
+    await writeFile(resolve(contentRoot, "guides", "start.md"), "# Start\n");
+
+    const plainOptions = normalizePublisherOptions({
+      catalog: catalog([document()]),
+    });
+    const captured = await capturePublicationInputs({
+      contentRoot,
+      publicDir,
+      options: plainOptions,
+    });
+    await publishProjection({
+      outputRoot: withoutRemoteRoot,
+      contentRoot,
+      publicDir,
+      options: plainOptions,
+      captured,
+      provenance,
+    });
+    await assert.rejects(
+      access(resolve(withoutRemoteRoot, "_mcp", "server.json")),
+      /ENOENT/,
+    );
+
+    const remoteOptions = normalizePublisherOptions({
+      catalog: catalog([document()]),
+      remoteMcp: {
+        url: "https://mcp.example.com/mcp",
+        readinessUrl: "https://mcp.example.com/readyz",
+        version: "0.1.0",
+      },
+    });
+    await publishProjection({
+      outputRoot: withRemoteRoot,
+      contentRoot,
+      publicDir,
+      options: remoteOptions,
+      captured,
+      provenance,
+    });
+    assert.equal(
+      await readFile(resolve(withRemoteRoot, "_mcp", "server.json"), "utf8"),
+      serializeRemoteServerMetadata(remoteOptions.remoteMcp),
+    );
+
+    await writeFile(
+      resolve(withRemoteRoot, "_mcp", "server.json"),
+      '{"stale":true}\n',
+    );
+    await assert.rejects(
+      publishProjection({
+        outputRoot: withRemoteRoot,
+        contentRoot,
+        publicDir,
+        options: remoteOptions,
+        captured,
+        provenance,
+      }),
+      /CAS_CONFLICT/,
+    );
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
 });
 
 test("catalog normalization rejects duplicate identities, paths, and routes", () => {

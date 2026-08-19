@@ -1,0 +1,50 @@
+name: Feature proposal
+description: Propose a public behavior, architecture, compatibility, or integration change before implementation.
+title: "proposal: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and user scenario
+      description: Describe the concrete limitation and who encounters it without prescribing an implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Intended external behavior
+      description: State the observable result, defaults, failure behavior, and what remains unchanged.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Include the current workaround and why it is insufficient.
+    validations:
+      required: true
+  - type: checkboxes
+    id: impact
+    attributes:
+      label: Impacted contracts
+      options:
+        - label: MCP tool or protocol behavior
+        - label: Corpus schema, identity, routes, or localization
+        - label: Web rendering, accessibility, or navigation
+        - label: Security or trust boundary
+        - label: Dependency, build, deployment, or release process
+        - label: Agent host or Skill integration
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and migration
+      description: Identify affected consumers, versioning needs, fallback, and rollback.
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance evidence
+      description: Define the tests, measurements, or observable outcomes that would prove the proposal complete.
+    validations:
+      required: true

@@ -543,6 +543,35 @@ const documents = [
     },
   }),
   bilingualDocument({
+    id: "engineering-records",
+    sectionId: "governance",
+    order: 15,
+    sidebarSlug: "product/engineering-records",
+    label: "Engineering records",
+    translation: "工程记录",
+    english: {
+      source: "product/engineering-records.md",
+      route: "/product/engineering-records/",
+    },
+    chinese: {
+      source: "zh-cn/product/engineering-records.md",
+      route: "/zh-cn/product/engineering-records/",
+    },
+  }),
+  bilingualDocument({
+    id: "security",
+    sectionId: "governance",
+    order: 18,
+    sidebarSlug: "security",
+    label: "Security policy",
+    translation: "安全策略",
+    english: { source: "security.md", route: "/security/" },
+    chinese: {
+      source: "zh-cn/security.md",
+      route: "/zh-cn/security/",
+    },
+  }),
+  bilingualDocument({
     id: "checkpoint-protocol",
     sectionId: "governance",
     order: 20,

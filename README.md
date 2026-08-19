@@ -7,8 +7,14 @@ Sumi Docs publishes one reviewed documentation corpus for two consumers:
 - people browse an Astro and Starlight website;
 - agents query the same corpus through a read-only MCP server.
 
-The source repository is public and under active development. No npm package,
-tagged GitHub Release, production site, or production binary has been published.
+The reviewed root `docs/` tree and content catalog are the semantic source of
+truth. The Web site and MCP server are independently addressable projections;
+an agent host is the MCP client.
+
+The [source repository](https://github.com/starSumi/Sumi-Docs-MCP) and
+[documentation site](https://starsumi.github.io/Sumi-Docs-MCP/) are public and
+under active development. No npm package, tagged GitHub Release, or supported
+binary has been published.
 
 ## Prerequisites
 
@@ -39,31 +45,59 @@ Open `http://127.0.0.1:4321`. Codex, Claude Code, and VS Code project adapters
 are described in [Agent host integration](docs/agent-hosts.md). They expose the
 four MCP tools without requiring the optional maintainer Skill.
 
+To expose the same corpus on a loopback Streamable HTTP endpoint:
+
+```powershell
+node packages/mcp/dist/index.js serve --transport streamable-http
+```
+
+Connect a compatible MCP client to `http://127.0.0.1:3000/mcp`. The static Web
+site and `_mcp` corpus projection do not themselves run that endpoint.
+
+For a hardened local container using the same reviewed root corpus:
+
+```powershell
+docker compose up --build
+```
+
+The service exposes MCP at `http://localhost:3000/mcp`, liveness at `/healthz`,
+and corpus readiness at `/readyz`. Docker is optional for source development;
+public deployment still requires HTTPS termination and explicit Host policy.
+
+The repository also provides two optional project workflows under
+`.agents/skills/`: `$sumi-docs-use` for setup and operation, and
+`$sumi-docs-pr` for proposal and pull-request preparation. They route work but
+do not replace MCP or publish remote changes.
+
 ## Workspace
 
 ```text
 apps/web/                   Astro/Starlight site and corpus publisher
-packages/mcp/               stdio MCP server and CLI
+packages/mcp/               stdio and Streamable HTTP MCP server and CLI
 packages/corpus-contract/   manifest schemas and conformance fixtures
 docs/                       product handbook and default corpus
+.agents/skills/             optional project usage and contribution workflows
 ```
 
-| Mode                     | Command                                 | Purpose                                        |
-| ------------------------ | --------------------------------------- | ---------------------------------------------- |
-| Web development          | `pnpm --filter @sumi-os/docs-web dev`   | Local browser site with reload                 |
-| MCP development          | `pnpm --filter @sumi-os/docs-mcp dev`   | TypeScript server against its example corpus   |
-| Production build         | `pnpm run build`                        | Build contract, MCP, and static site           |
-| Compiled MCP             | `node packages/mcp/dist/index.js serve` | Serve the discovered project corpus over stdio |
-| Validation               | `pnpm run verify`                       | Package quality, tests, and dependency gates   |
-| Cross-product validation | `pnpm run verify:integration`           | Exercise the generated Web corpus through MCP  |
+| Mode                     | Command                                                             | Purpose                                        |
+| ------------------------ | ------------------------------------------------------------------- | ---------------------------------------------- |
+| Web development          | `pnpm --filter @sumi-os/docs-web dev`                               | Local browser site with reload                 |
+| MCP development          | `pnpm --filter @sumi-os/docs-mcp dev`                               | TypeScript server against its example corpus   |
+| Production build         | `pnpm run build`                                                    | Build contract, MCP, and static site           |
+| Compiled MCP             | `node packages/mcp/dist/index.js serve`                             | Serve the discovered project corpus over stdio |
+| Remote MCP endpoint      | `node packages/mcp/dist/index.js serve --transport streamable-http` | Serve the same corpus on loopback HTTP         |
+| Validation               | `pnpm run verify`                                                   | Package quality, tests, and dependency gates   |
+| Cross-product validation | `pnpm run verify:integration`                                       | Exercise the generated Web corpus through MCP  |
 
-There are no required runtime secrets or application environment variables.
-`SITE_URL` is required only for a release-site candidate. Generated output,
-local state, logs, caches, and `.env` files remain ignored.
+There are no required runtime secrets. `SITE_URL` is required only for a
+release-site candidate. The container accepts documented `SUMI_DOCS_*`
+deployment variables; generated output, local state, logs, caches, and `.env`
+files remain ignored.
 
 Package-specific instructions remain in each workspace. Active architecture
-decisions live under `packages/mcp/docs/decisions/`; the root handbook presents
-their user-facing consequences without duplicating the decision records.
+decisions live in the owning workspace's `docs/decisions/` directory; the root
+handbook presents their user-facing consequences without duplicating the
+decision records.
 
-Source visibility does not publish a tag, package, site, or binary. Those
+Source and site visibility do not publish a tag, package, or binary. Those
 artifacts remain subject to the documented release gates.

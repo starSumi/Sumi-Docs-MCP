@@ -14,6 +14,8 @@ predecessor repositories.
 - `packages/corpus-contract/`: pure schemas, canonicalization, fixtures, and
   conformance helpers. No transport, filesystem, Astro, or parser behavior.
 - `docs/`: reviewed product documentation and default self-hosted corpus.
+- `.agents/skills/`: reviewed, repository-scoped usage and contribution
+  workflows. Cross-repository maintainer policy remains user-scoped.
 - `.codex/`, `.mcp.json`, `.vscode/`: thin project MCP adapters only.
 
 Nested `AGENTS.md` files continue to govern package-specific security and

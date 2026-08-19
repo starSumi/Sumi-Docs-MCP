@@ -28,11 +28,25 @@ node packages/mcp/dist/index.js doctor --json
 修改配置或重新构建 MCP package 后，在宿主中重启 MCP 服务。每个服务进程只保留一个
 只读语料快照，不进行 live reload。
 
-## 无 Skill fallback
+## 项目级 Skill 与直接使用 MCP
+
+当任务描述匹配时，Codex 会从 `.agents/skills/` 发现经过评审的 `$sumi-docs-use` 和
+`$sumi-docs-pr` 工作流；Claude Code 可通过仓库 instructions 读取同一份规范文件。
+它们分别覆盖安装运行和 Pull Request 准备，但普通文档查询不依赖它们。
+
+## 直接使用 MCP
 
 宿主配置本身已经足够。Agent 无需加载 Skill，就可以调用 `list_docs`、按关键词搜索、
 按列表中的精确路径获取文档，以及查询 OpenAPI。MCP 初始化 instructions 会说明这套流程
 以及只读、进程快照边界。
+
+对于产品使用、架构、运维和稳定决策问题，Agent 应先查询这份经过审阅的投影，再直接
+搜索文档文件。实现改动仍以当前源码和测试为准。MCP 服务只约束自身的四工具表面，
+不会授予、撤销或取代 Agent 宿主的文件系统权限与 sandbox。
+
+Agent 宿主就是 MCP client。远程部署时，支持 Streamable HTTP 的宿主直接连接
+`https://mcp.example.com/mcp` 这类服务 URL，不再启动本地进程。工具名称、严格 schema、
+初始化 instructions 与语料 identity 保持一致。
 
 可选的 `$sumi-docs-maintain` Skill 只负责维护路由：帮助 Agent 判断仓库改动属于哪个
 package、需要哪些验证门。它不是协议依赖，也不会通过 MCP 写入文档。

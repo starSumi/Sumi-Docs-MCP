@@ -25,6 +25,8 @@ import { fileURLToPath } from "node:url";
 import { catalogPublisherDocuments } from "../src/content-catalog.ts";
 
 const OPENAPI_PATH = /^[a-zA-Z0-9_/-]+\.json$/;
+const SEMVER =
+  /^(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/;
 const execFile = promisify(execFileCallback);
 
 function assertContained(root, candidate) {
@@ -48,6 +50,97 @@ function assertOpenApiPath(value) {
   }
 }
 
+function normalizePublicHttpsUrl(value, label) {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    throw new Error(`${label} must be an absolute HTTPS URL.`);
+  }
+  let url;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    throw new Error(`${label} must be an absolute HTTPS URL.`);
+  }
+  if (
+    url.protocol !== "https:" ||
+    url.username ||
+    url.password ||
+    url.search ||
+    url.hash
+  ) {
+    throw new Error(
+      `${label} must use HTTPS without credentials, query, or fragment.`,
+    );
+  }
+  return url.href;
+}
+
+export function normalizeRemoteMcp(value) {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    Array.isArray(value) ||
+    Object.keys(value).some(
+      (key) => !["url", "readinessUrl", "version"].includes(key),
+    ) ||
+    Object.keys(value).length !== 3
+  ) {
+    throw new Error(
+      "Publisher remote MCP configuration requires only url, readinessUrl, and version.",
+    );
+  }
+
+  const url = normalizePublicHttpsUrl(value.url, "Publisher remote MCP URL");
+  const readinessUrl = normalizePublicHttpsUrl(
+    value.readinessUrl,
+    "Publisher remote MCP readiness URL",
+  );
+  if (typeof value.version !== "string" || !SEMVER.test(value.version)) {
+    throw new Error(
+      "Publisher remote MCP version must be a valid SemVer value.",
+    );
+  }
+  return { url, readinessUrl, version: value.version };
+}
+
+export function resolveRemoteMcpEnvironment({
+  publicMcpUrl,
+  publicMcpReadinessUrl,
+  version,
+}) {
+  const url = publicMcpUrl?.trim();
+  const readinessUrl = publicMcpReadinessUrl?.trim();
+  if (Boolean(url) !== Boolean(readinessUrl)) {
+    throw new Error(
+      "PUBLIC_MCP_URL and PUBLIC_MCP_READINESS_URL must be configured together.",
+    );
+  }
+  if (!url) return undefined;
+  return normalizeRemoteMcp({ url, readinessUrl, version });
+}
+
+export function createRemoteServerMetadata(remoteMcp) {
+  const normalized = normalizeRemoteMcp(remoteMcp);
+  return {
+    $schema:
+      "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+    name: "io.github.starsumi/sumi-docs-mcp",
+    title: "Sumi Docs MCP",
+    description:
+      "Read-only MCP access to the reviewed Sumi Docs documentation corpus.",
+    repository: {
+      url: "https://github.com/starSumi/Sumi-Docs-MCP",
+      source: "github",
+      subfolder: "packages/mcp",
+    },
+    version: normalized.version,
+    remotes: [{ type: "streamable-http", url: normalized.url }],
+  };
+}
+
+export function serializeRemoteServerMetadata(remoteMcp) {
+  return `${JSON.stringify(createRemoteServerMetadata(remoteMcp), null, 2)}\n`;
+}
+
 export function normalizePublisherOptions(options = {}) {
   if (!options.catalog) {
     throw new Error("Publisher requires a reviewed content catalog.");
@@ -55,7 +148,13 @@ export function normalizePublisherOptions(options = {}) {
   if (
     Object.keys(options).some(
       (key) =>
-        !["catalog", "contentRoot", "openapi", "provenance"].includes(key),
+        ![
+          "catalog",
+          "contentRoot",
+          "openapi",
+          "provenance",
+          "remoteMcp",
+        ].includes(key),
     )
   ) {
     throw new Error("Publisher options contain an unknown field.");
@@ -72,12 +171,17 @@ export function normalizePublisherOptions(options = {}) {
   ) {
     throw new Error("Publisher contentRoot must be a non-empty path string.");
   }
+  const remoteMcp =
+    options.remoteMcp === undefined
+      ? undefined
+      : normalizeRemoteMcp(options.remoteMcp);
   return {
     catalog: options.catalog,
     documents,
     ...(options.contentRoot && { contentRoot: options.contentRoot }),
     ...(options.openapi && { openapi: options.openapi }),
     ...(options.provenance && { provenance: options.provenance }),
+    ...(remoteMcp && { remoteMcp }),
   };
 }
 
@@ -375,6 +479,12 @@ async function writeMutableProjection(machineRoot, publication, captured) {
     resolve(machineRoot, "sumi-docs-manifest.json"),
     `${JSON.stringify(publication.v1, null, 2)}\n`,
   );
+  if (publication.remoteMcp) {
+    await writeFile(
+      resolve(machineRoot, "server.json"),
+      serializeRemoteServerMetadata(publication.remoteMcp),
+    );
+  }
 }
 
 async function writeCompleteProjection(machineRoot, publication, captured) {
@@ -402,6 +512,23 @@ async function verifyCompleteProjection(machineRoot, publication, captured) {
   ]);
   if (actualV1 !== expectedV1 || actualRoutes !== expectedRoutes) {
     throw new Error("Compatibility projection differs from the candidate.");
+  }
+  const expectedRemoteServer = publication.remoteMcp
+    ? serializeRemoteServerMetadata(publication.remoteMcp)
+    : undefined;
+  let actualRemoteServer;
+  try {
+    actualRemoteServer = await readFile(
+      resolve(machineRoot, "server.json"),
+      "utf8",
+    );
+  } catch (error) {
+    if (error?.code !== "ENOENT") throw error;
+  }
+  if (actualRemoteServer !== expectedRemoteServer) {
+    throw new Error(
+      "Remote MCP discovery metadata differs from the candidate.",
+    );
   }
   const desiredToken = sha256Hex(canonicalJson(publication.current));
   if (current.token !== desiredToken) {
@@ -436,7 +563,10 @@ export async function publishProjection({
   captured,
   provenance,
 }) {
-  const publication = createPublication({ options, captured, provenance });
+  const publication = {
+    ...createPublication({ options, captured, provenance }),
+    ...(options.remoteMcp && { remoteMcp: options.remoteMcp }),
+  };
   const machineRoot = resolve(outputRoot, "_mcp");
   const stagingRoot = resolve(
     outputRoot,

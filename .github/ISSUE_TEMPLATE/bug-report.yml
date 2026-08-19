@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a reproducible defect in the MCP server, Web site, corpus contract, or build.
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: Report security vulnerabilities privately through SECURITY.md.
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Affected surface
+      options:
+        - MCP server
+        - Documentation website
+        - Corpus contract or publisher
+        - Build, CI, or packaging
+        - Agent host integration
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction
+      description: Provide the smallest repository-relative steps, inputs, and command that reproduce the issue.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Include the Sumi Docs commit or version, Node.js version, operating system, and agent host when relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Include relevant logs or screenshots without credentials, private URLs, local absolute paths, or private corpus content.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Preflight
+      options:
+        - label: I searched existing issues and confirmed this is not a security vulnerability.
+          required: true

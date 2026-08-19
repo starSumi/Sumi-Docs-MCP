@@ -18,6 +18,12 @@ vulnerabilities through `SECURITY.md`, not a public issue.
 A direct pull request is appropriate for a narrow content correction, test-only
 improvement, or internal fix that preserves public behavior.
 
+Use the feature proposal issue form for an unresolved public design and the bug
+form for a reproducible defect. The
+[engineering records](../product/engineering-records/) page defines when a
+product requirement, proposal, ADR, executable specification, benchmark,
+security advisory, or pull request is authoritative.
+
 ## Prepare the pull request
 
 Create a topic branch from the current default branch and keep one conceptual
@@ -59,3 +65,7 @@ intentional commit sequence adds review value.
 Read [Development](../development/), [Releasing](../releasing/), and
 [Skills, MCP, and orchestration](../skills-and-orchestration/) for the boundaries
 behind these checks.
+
+Repository-aware agents may use `$sumi-docs-pr` to classify the record, map the
+change to its owning checks, and prepare a pull request body. The Skill does not
+publish or merge a pull request.

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sumi Docs: Use"
+  short_description: "Set up and operate Sumi Docs locally"
+  default_prompt: "Use $sumi-docs-use to set up Sumi Docs, select the intended corpus, and verify the active server."

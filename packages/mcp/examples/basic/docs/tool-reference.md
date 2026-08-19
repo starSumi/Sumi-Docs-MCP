@@ -9,7 +9,8 @@ and API retrieval to `get_openapi_spec`, and state that source changes require a
 process restart. Clients that do not load a repository Skill can use this native
 protocol guidance without changing the tool contract.
 
-Sumi-Docs-MCP exposes four read-only tools over the official stdio adapter. The
+Sumi-Docs-MCP exposes four read-only tools over the official stdio and
+Streamable HTTP adapters. The
 implemented protocol target is MCP `2026-07-28`. A 2026 client may send
 `tools/list` as its first request with the required request metadata; the server
 does not require a legacy initialize handshake.
@@ -101,8 +102,9 @@ category in `_meta.errorCode`. Absolute paths, stack traces, raw input, and
 validator details are never returned to the client. Operator diagnostics go to
 stderr because stdout is reserved for MCP JSON-RPC.
 
-The server object is cheap to construct. The first content tool call loads one
-bounded local or remote corpus snapshot and optional OpenAPI document. That
-promise and read-only index are reused until process exit. `tools/list` does
-not wait for corpus loading. There is no live reload, client-specific state, or
-conversation state.
+The server object is cheap to construct. Stdio loads one bounded local or remote
+corpus snapshot and optional OpenAPI document on the first content tool call;
+`tools/list` does not wait for that load. Streamable HTTP completes the same kind
+of bounded load before listening. The resulting read-only index is reused until
+process exit. There is no live reload, client-specific state, or conversation
+state.

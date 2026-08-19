@@ -2,6 +2,10 @@ import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 
 export const ALLOWED_HOST_FILES = new Set([
+  ".agents/skills/sumi-docs-pr/SKILL.md",
+  ".agents/skills/sumi-docs-pr/agents/openai.yaml",
+  ".agents/skills/sumi-docs-use/SKILL.md",
+  ".agents/skills/sumi-docs-use/agents/openai.yaml",
   ".codex/config.toml",
   ".mcp.json",
   ".vscode/mcp.json",

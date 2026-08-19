@@ -1,0 +1,49 @@
+name: sumi-docs
+
+services:
+  mcp:
+    image: ${SUMI_DOCS_MCP_IMAGE:-sumi-docs-mcp:local}
+    build:
+      context: .
+      dockerfile: Dockerfile.mcp
+      args:
+        VCS_REF: ${SUMI_DOCS_BUILD_REVISION:-}
+    init: true
+    restart: unless-stopped
+    environment:
+      SUMI_DOCS_SOURCE: /data/docs
+      SUMI_DOCS_HTTP_HOST: 0.0.0.0
+      SUMI_DOCS_HTTP_PORT: 3000
+      SUMI_DOCS_HTTP_PATH: /mcp
+      SUMI_DOCS_ALLOWED_HOSTS: ${SUMI_DOCS_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      SUMI_DOCS_ALLOWED_ORIGINS: ${SUMI_DOCS_ALLOWED_ORIGINS:-}
+      SUMI_DOCS_BASE_URL: ${SUMI_DOCS_BASE_URL:-}
+      SUMI_DOCS_OPENAPI: ${SUMI_DOCS_OPENAPI:-}
+      SUMI_DOCS_BUILD_REVISION: ${SUMI_DOCS_BUILD_REVISION:-}
+      SUMI_DOCS_EXPECTED_CORPUS_REVISION: ${SUMI_DOCS_EXPECTED_CORPUS_REVISION:-}
+    ports:
+      - "127.0.0.1:${SUMI_DOCS_MCP_PORT:-3000}:3000"
+    volumes:
+      - type: bind
+        source: ${SUMI_DOCS_SOURCE_DIR:-./docs}
+        target: /data/docs
+        read_only: true
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=16m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 128
+    stop_grace_period: 10s
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:3000/readyz').then((response)=>{if(!response.ok)process.exit(1)}).catch(()=>process.exit(1))
+      interval: 30s
+      timeout: 3s
+      start_period: 10s
+      retries: 3

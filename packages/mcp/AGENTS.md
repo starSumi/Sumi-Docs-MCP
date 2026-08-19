@@ -9,7 +9,8 @@ instructions may be added in a nested `AGENTS.md` or `AGENTS.override.md`.
   remote corpus sources
 - Runtime: Node.js 25.5.0 or newer
 - Protocol target: MCP 2026-07-28
-- Implemented transport: stdio
+- Implemented transports: stdio and stateless Streamable HTTP for the Node.js
+  distribution
 - Architecture: parser, read-only document index, MCP adapter
 
 Current behavior is documented in `README.md` and `docs/`. Files under
@@ -20,9 +21,10 @@ Current behavior is documented in `README.md` and `docs/`. Files under
 ### No client or session state
 
 Requests must not depend on client identity, conversation history, sticky
-routing, or prior mutations. A process may retain one read-only documentation
-index and OpenAPI object after the first content tool call. That cache is corpus
-state, not user or session state.
+routing, or prior mutations. Stdio may retain one read-only documentation index
+and OpenAPI object after the first content tool call. Streamable HTTP loads that
+same kind of immutable snapshot before it begins listening. This process-local
+cache is corpus state, not user or session state.
 
 ### Read-only source access
 
@@ -40,6 +42,13 @@ without architecture and security review.
 Do not add React, Vue, Svelte, Angular, DOM libraries, browser APIs, or UI-specific
 code. Optional network transports must use Node.js primitives or the official MCP
 SDK; do not add an HTTP framework without architecture review.
+
+Streamable HTTP remains stateless. Construct a fresh protocol server for each
+request while sharing only the process-local, preloaded read-only corpus snapshot.
+Loopback is the default bind. Non-loopback listeners require an explicit
+operator acknowledgement, Host allowlisting, Origin validation, bounded request
+bodies, and an external TLS and rate-control boundary. Do not add private-corpus
+authentication without an accepted authorization design.
 
 ### Protocol compatibility
 
@@ -107,6 +116,7 @@ belong on stderr because stdout is reserved for stdio JSON-RPC.
 Existing production dependencies are the approved baseline:
 
 - `@modelcontextprotocol/server`
+- `@modelcontextprotocol/node` for the official Node Streamable HTTP adapter
 - `zod`
 - the unified and remark parsing packages already in `package.json`
 - `yaml`
@@ -140,11 +150,13 @@ the same change.
 
 ## Data lifecycle
 
-The MCP server object is cheap to construct. The first content tool call builds a
-`DocsVault`, recursively parses a local Markdown/MDX directory or downloads one
-bounded remote manifest snapshot, and optionally loads OpenAPI JSON. That promise
-and read-only index are reused until process exit. `tools/list` must not wait for
-corpus loading.
+The MCP server object is cheap to construct. In stdio mode, the first content tool
+call builds a `DocsVault`, recursively parses a local Markdown/MDX directory or
+downloads one bounded remote manifest snapshot, and optionally loads OpenAPI
+JSON. That promise and read-only index are reused until process exit, and
+`tools/list` must not wait for corpus loading. Streamable HTTP performs the same
+bounded load once before opening its listener, then gives each request a fresh
+protocol server backed by that immutable process-local snapshot.
 
 There is no live reload. Documentation changes require a process restart. The
 current implementation holds parsed document content in memory; do not claim
@@ -189,6 +201,8 @@ SEA configuration requirements:
 - `useCodeCache` remains `true`.
 - `assets` remains empty because the corpus is operator-supplied.
 - The output directory must exist before `node --build-sea` runs.
+- The SEA distribution remains stdio-only; HTTP serving belongs to the Node.js
+  distribution until it has an independently accepted packaging profile.
 
 ## Performance requirements
 
@@ -226,7 +240,7 @@ For SEA or packaging changes, also run on Node.js 25.5 or newer:
 ```powershell
 pnpm run build:sea
 .\artifacts\bin\sumi-docs-mcp.exe --version
-pnpm run example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm run example:smoke --executable artifacts/bin/sumi-docs-mcp.exe
 pnpm run benchmark:cold-start --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 

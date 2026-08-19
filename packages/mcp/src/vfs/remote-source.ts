@@ -32,6 +32,7 @@ export interface RemoteDocument {
 export interface RemoteCorpus {
   documents: RemoteDocument[];
   openApiContent?: string;
+  revision?: string;
 }
 
 export { isRemoteDocsSource, normalizeRemoteManifestUrl };
@@ -258,9 +259,10 @@ export async function loadRemoteCorpus(source: string): Promise<RemoteCorpus> {
     immutableManifestResponse.bytes,
   );
   const entries = v2Entries(manifest);
-  return downloadCorpus(
+  const corpus = await downloadCorpus(
     entries.documents,
     entries.openapi,
     immutableManifestUrl,
   );
+  return { ...corpus, revision: locator.revision };
 }

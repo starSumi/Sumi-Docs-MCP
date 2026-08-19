@@ -2,8 +2,9 @@
 
 Sumi-Docs-MCP is a read-only MCP server for Markdown, MDX, and OpenAPI
 documentation stored in a local directory or on a remote HTTPS host. It exposes
-four tools over stdio: list documents, search by keyword, fetch one document,
-and retrieve an OpenAPI specification.
+the same four tools over local stdio or stateless Streamable HTTP: list
+documents, search by keyword, fetch one document, and retrieve an OpenAPI
+specification.
 
 Source is hosted at [GitHub](https://github.com/starSumi/Sumi-Docs-MCP). No npm
 package or GitHub Release has been published for pre-release `0.1.0`; run the
@@ -60,19 +61,14 @@ replace the placeholders with absolute paths, and follow the configuration
 contract of your MCP client. Remote-source clients can start from
 [`examples/clients/remote-launcher-template.json`](examples/clients/remote-launcher-template.json).
 
-For Codex, the equivalent user- or project-level `config.toml` entry is:
+For Codex opened at this repository root, the project-level `config.toml` entry
+is:
 
 ```toml
 [mcp_servers.sumiDocs]
-command = 'C:\absolute\path\to\sumi-docs-mcp.exe'
-args = [
-  'serve',
-  'C:\absolute\path\to\docs',
-  '--openapi',
-  'C:\absolute\path\to\openapi.json',
-  '--base-url',
-  'https://docs.example.com/product/'
-]
+command = "node"
+args = ["packages/mcp/dist/index.js", "serve"]
+cwd = "."
 ```
 
 With `--base-url`, `list_docs`, `search_docs`, and `fetch_doc` include a public
@@ -128,7 +124,30 @@ The remote host must expose `sumi-docs-manifest.json`. The same four MCP tools
 operate on the downloaded read-only snapshot. Remote OpenAPI is declared in the
 manifest, so `--openapi` is local-only. See
 [Remote documentation sources](docs/remote-sources.md) for the manifest format
-and network limits. The only implemented MCP transport is stdio.
+and network limits.
+
+The source URL above changes where the server reads documents; it does not make
+the MCP endpoint remote. To expose the same read-only core on loopback:
+
+```powershell
+node dist/index.js serve https://content.example.com/product/_mcp/v2/current.json --base-url https://docs.example.com/product/ --transport streamable-http --http-host 127.0.0.1 --http-port 3000
+```
+
+Connect an MCP client to `http://127.0.0.1:3000/mcp`. A public deployment needs
+an explicit non-loopback acknowledgement, Host and Origin allowlists, and a TLS
+reverse proxy. See [Configuration](docs/configuration.md).
+
+From the workspace root, the same Node distribution can run in the maintained
+container:
+
+```powershell
+docker compose up --build
+```
+
+The default read-only mount serves root `docs/`. The service exposes liveness at
+`/healthz` and corpus readiness at `/readyz`. The Postman collection under
+`examples/postman/` provides manual deployment probes; it is not a substitute
+for an MCP client.
 
 ## Tool surface
 
@@ -142,15 +161,17 @@ and network limits. The only implemented MCP transport is stdio.
 See [docs/tool-reference.md](docs/tool-reference.md) for exact schemas, result
 fields, error behavior, protocol metadata, and snapshot lifecycle.
 
-The server has no client or session state. It builds one process-local, read-only
-corpus snapshot on the first tool call. Source changes require a process restart.
+The server has no client or session state. Stdio builds one process-local,
+read-only corpus snapshot on the first content tool call. Streamable HTTP loads
+the same snapshot before accepting traffic so `/readyz` can identify it. Source
+changes require a process restart.
 
 ## Configuration model
 
 Runtime configuration comes from CLI arguments, not `.env` files:
 
 ```text
-sumi-docs-mcp serve [docs-source] [--config <path>] [--openapi <path>] [--base-url <url>] [--transport stdio] [--verbose]
+sumi-docs-mcp serve [docs-source] [--config <path>] [--openapi <path>] [--base-url <url>] [--transport <stdio|streamable-http>] [HTTP options] [--verbose]
 sumi-docs-mcp doctor [docs-source] [--config <path>] [--json] [--show-paths]
 ```
 
@@ -167,8 +188,9 @@ default. `--show-paths` is an opt-in for local diagnosis and is rejected by
 `serve`; credentials and stack traces stay redacted in both modes.
 
 The benchmark has its own command options; see
-[`docs/development.md`](docs/development.md). There are no required application
-environment variables.
+[`docs/development.md`](docs/development.md). No runtime secrets are required.
+The container maps the documented `SUMI_DOCS_*` deployment variables to the same
+validated CLI contract.
 
 ## Documentation
 
@@ -188,7 +210,8 @@ environment variables.
 
 ## Current limitations
 
-- stdio is the only transport.
+- The SEA executable supports stdio; Streamable HTTP currently uses the Node.js
+  distribution.
 - Search is lexical keyword matching, not embedding or semantic search.
 - The corpus is loaded into memory on first use and is not refreshed in place.
 - Remote sources require an explicit manifest; the server does not crawl sites.

@@ -6,7 +6,7 @@ description: Configure source discovery, public page URLs, runtime modes, and st
 The CLI accepts explicit arguments and a strict tracked project config:
 
 ```text
-sumi-docs-mcp serve [docs-source] [--config <path>] [--openapi <path>] [--base-url <url>] [--transport stdio] [--verbose]
+sumi-docs-mcp serve [docs-source] [--config <path>] [--openapi <path>] [--base-url <url>] [--transport <stdio|streamable-http>] [HTTP options] [--verbose]
 sumi-docs-mcp doctor [docs-source] [--config <path>] [--json] [--show-paths]
 ```
 
@@ -18,7 +18,7 @@ When an explicit CLI source selects a remote manifest, a configured local
 `openapi` path belongs to the replaced local source and is ignored. An explicit
 CLI `--openapi` remains invalid in remote mode; declare it in the manifest.
 
-## Source and page URL
+## Address model
 
 `docs-source` selects what the machine reads. It may be a local directory or a
 remote HTTPS manifest/base URL.
@@ -26,6 +26,23 @@ remote HTTPS manifest/base URL.
 `--base-url` selects what a person opens when an MCP result contains a URL. It
 does not host content and does not change the MCP transport. Markdown extensions
 are removed, and a final `index.md` or `index.mdx` maps to its directory page.
+
+`--transport` selects how the agent client reaches MCP. `stdio` launches a local
+child process. `streamable-http` exposes `/mcp` on `127.0.0.1:3000` by default.
+The source URL, page URL, and MCP endpoint are independent addresses.
+
+HTTP options are `--http-host`, `--http-port`, `--http-path`, repeatable
+`--allowed-host`, repeatable `--allowed-origin`, and
+`--allow-public-network`. A non-loopback bind requires the acknowledgement and
+at least one allowed Host. Public service TLS and request-rate policy belong at
+the reverse proxy.
+
+`GET /healthz` is a lightweight liveness check. `GET /readyz` reports the loaded
+document count and, for an immutable v2 source, its corpus revision after HTTP
+startup has completed. Local directories and v1 sources report a `null`
+revision. A v2 deployment may set `SUMI_DOCS_EXPECTED_CORPUS_REVISION` to a full
+`sha256:` revision; a missing or mismatched revision fails before the listener
+becomes ready.
 
 ## Development and distribution
 
@@ -36,9 +53,34 @@ are removed, and a final `index.md` or `index.mdx` maps to its directory page.
 | Node distribution      | `node packages/mcp/dist/index.js`              | Run the compiled package from this workspace      |
 | Standalone executable  | `packages/mcp/artifacts/bin/sumi-docs-mcp.exe` | Run without an external Node installation         |
 
-There are no required application environment variables. `SITE_URL` belongs to
-the Web release build, not MCP runtime configuration. Source changes require a
-process restart because each server keeps one read-only corpus snapshot.
+The Node distribution and maintained container support both transports. The
+standalone executable is a stdio artifact until HTTP packaging receives an
+independent acceptance profile.
+
+No runtime secrets are required. `SITE_URL` belongs to the Web release build.
+The container maps documented `SUMI_DOCS_*` variables to validated CLI options;
+build and expected corpus revisions are freshness guards, not credentials.
+Source changes require a process restart because each server keeps one
+read-only corpus snapshot.
+
+The Web release build accepts `PUBLIC_MCP_URL` and
+`PUBLIC_MCP_READINESS_URL` as an optional pair. Both must be absolute HTTPS URLs
+without credentials, query, or fragment. The publisher never derives the
+readiness endpoint from the Streamable HTTP endpoint. When configured, it emits
+`<BASE_PATH>_mcp/server.json` from the installed MCP package identity. For the
+project Pages deployment, the public path is
+`/Sumi-Docs-MCP/_mcp/server.json`. Without the pair, no remote server metadata is
+emitted and the readiness probe is skipped.
+
+Before a configured Pages artifact is uploaded, the release probe requires the
+remote `/readyz` response to report the expected service, package version,
+protocol version, and the exact revision in the built
+`_mcp/v2/current.json`. `GITHUB_SHA`, when present, also requires the remote
+`buildRevision` to identify the same commit. The probe has a 10-second timeout,
+a 64 KiB response limit, and does not log upstream response bodies or errors.
+This revision guarantee applies to a remote MCP service loaded from the Web v2
+projection. A local directory source has no immutable corpus revision and is
+verified through its byte and tool contracts instead.
 
 `doctor` reports project-relative paths and explicit external placeholders by
 default. `--show-paths` reveals resolved local paths for interactive diagnosis

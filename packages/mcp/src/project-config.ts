@@ -298,6 +298,7 @@ export async function resolveCliOptions(
     openApiPath,
     baseUrl,
     transport: options.transport,
+    ...(options.http && { http: options.http }),
     verbose: options.verbose,
     projectRoot: context.projectRoot,
     sourceOrigin,

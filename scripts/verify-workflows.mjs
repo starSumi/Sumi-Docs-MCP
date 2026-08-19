@@ -115,6 +115,44 @@ export function validateWorkflowPolicy({
     errors,
   );
   validatePnpmLifecycle("CI", "verify", ci.jobs?.verify, errors);
+  const container = ci.jobs?.container;
+  const containerSteps = workflowSteps({ jobs: { container } });
+  const containerBuild = containerSteps.find(
+    (step) => step.name === "Build the reviewed image",
+  );
+  const containerExercise = containerSteps.find(
+    (step) => step.name === "Exercise the hardened container boundary",
+  );
+  if (
+    container?.["runs-on"] !== "ubuntu-24.04" ||
+    !String(containerBuild?.run ?? "").includes("docker build") ||
+    !String(containerBuild?.run ?? "").includes("VCS_REF=$GITHUB_SHA") ||
+    !String(containerBuild?.run ?? "").includes(".Config.User") ||
+    !String(containerExercise?.run ?? "").includes("--read-only") ||
+    !String(containerExercise?.run ?? "").includes("--cap-drop ALL") ||
+    !String(containerExercise?.run ?? "").includes(
+      "--security-opt no-new-privileges",
+    ) ||
+    !String(containerExercise?.run ?? "").includes("/readyz") ||
+    !String(containerExercise?.run ?? "").includes("Host: localhost:3000") ||
+    !String(containerExercise?.run ?? "").includes("tools/list") ||
+    !String(containerExercise?.run ?? "").includes(
+      "mcp-protocol-version: 2026-07-28",
+    ) ||
+    !String(containerExercise?.run ?? "").includes(
+      "accept: application/json, text/event-stream",
+    ) ||
+    !String(containerExercise?.run ?? "").includes(
+      ".buildRevision == $revision",
+    ) ||
+    !String(containerExercise?.run ?? "").includes("mcp-session-id") ||
+    !String(containerExercise?.run ?? "").includes("docker stop --time 10") ||
+    !String(containerExercise?.run ?? "").includes(".State.ExitCode")
+  ) {
+    errors.push(
+      "CI must build and exercise the hardened stateless MCP container.",
+    );
+  }
 
   if (
     !sameKeys(candidate.permissions, ["contents"]) ||
@@ -346,6 +384,9 @@ export function validateWorkflowPolicy({
   const buildSite = pagesBuildSteps.find(
     (step) => step.name === "Build and verify site",
   );
+  const verifyRemoteMcp = pagesBuildSteps.find(
+    (step) => step.name === "Verify configured remote MCP readiness",
+  );
   const pagesFreshness = pagesBuildSteps.find(
     (step) => step.id === "freshness",
   );
@@ -356,11 +397,30 @@ export function validateWorkflowPolicy({
     configurePages?.id !== "pages" ||
     buildSite?.env?.SITE_URL !== "${{ steps.pages.outputs.origin }}" ||
     buildSite?.env?.BASE_PATH !== "${{ steps.pages.outputs.base_path }}" ||
+    buildSite?.env?.PUBLIC_MCP_URL !== "${{ vars.PUBLIC_MCP_URL }}" ||
+    buildSite?.env?.PUBLIC_MCP_READINESS_URL !==
+      "${{ vars.PUBLIC_MCP_READINESS_URL }}" ||
     !String(buildSite?.run ?? "").includes("verify:release") ||
     !String(buildSite?.run ?? "").includes("verify:integration")
   ) {
     errors.push(
       "Pages build must use configured origin/base outputs and release gates.",
+    );
+  }
+  if (
+    verifyRemoteMcp?.env?.PUBLIC_MCP_URL !== "${{ vars.PUBLIC_MCP_URL }}" ||
+    verifyRemoteMcp?.env?.PUBLIC_MCP_READINESS_URL !==
+      "${{ vars.PUBLIC_MCP_READINESS_URL }}" ||
+    verifyRemoteMcp?.env?.GITHUB_SHA !== "${{ github.sha }}" ||
+    String(verifyRemoteMcp?.run ?? "").trim() !==
+      "node apps/web/scripts/verify-remote-mcp.mjs" ||
+    pagesBuildSteps.indexOf(verifyRemoteMcp) <=
+      pagesBuildSteps.indexOf(buildSite) ||
+    pagesBuildSteps.indexOf(verifyRemoteMcp) >=
+      pagesBuildSteps.indexOf(pagesFreshness)
+  ) {
+    errors.push(
+      "Pages must bind remote MCP discovery to readiness before artifact upload.",
     );
   }
   if (
