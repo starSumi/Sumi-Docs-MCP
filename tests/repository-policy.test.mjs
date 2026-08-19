@@ -62,6 +62,8 @@ test("host adapters use an exact case-sensitive allowlist", () => {
     ".codex/sessions/rollout.jsonl",
     ".agent/state.json",
     ".agents/logs/trace.json",
+    ".agents/skills/sumi-docs-audit/README.md",
+    ".agents/skills/sumi-docs-audit/reports/latest.md",
     ".vscode/settings.json",
     ".Claude/skills/sumi-docs-maintain/SKILL.md",
     ".MCP.json",
@@ -104,7 +106,7 @@ test("tracked host adapter validation requires the complete supported set", () =
 });
 
 test("project Skills have canonical metadata and host prompts", () => {
-  for (const name of ["sumi-docs-use", "sumi-docs-pr"]) {
+  for (const name of ["sumi-docs-audit", "sumi-docs-use", "sumi-docs-pr"]) {
     const skillPath = `.agents/skills/${name}/SKILL.md`;
     const source = readFileSync(skillPath, "utf8").replaceAll("\r\n", "\n");
     const frontmatterMatch = /^---\n([\s\S]+?)\n---\n/u.exec(source);

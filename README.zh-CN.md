@@ -60,9 +60,9 @@ docker compose up --build
 MCP 地址为 `http://localhost:3000/mcp`，`/healthz` 用于存活探测，`/readyz` 用于语料
 就绪探测。源码开发不强制使用 Docker；公开部署仍须终止 HTTPS 并配置明确的 Host 策略。
 
-仓库还在 `.agents/skills/` 下提供两个可选的项目工作流：`$sumi-docs-use` 用于安装和
-运行，`$sumi-docs-pr` 用于提案与 Pull Request 准备。它们只负责路由工作，不替代 MCP，
-也不会发布远程改动。
+仓库还在 `.agents/skills/` 下提供三个可选的项目工作流：`$sumi-docs-use` 用于安装和
+运行，`$sumi-docs-pr` 用于提案与 Pull Request 准备，`$sumi-docs-audit` 用于只读、
+证据绑定的仓库与发布审计。它们只负责路由工作，不替代 MCP，也不会发布远程改动。
 
 ## 工作区
 

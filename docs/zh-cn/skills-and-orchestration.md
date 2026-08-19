@@ -23,10 +23,12 @@ Agent，也不保存对话状态。无状态传输不提供 Agent 记忆、check
 
 ## 仓库级 Skills
 
-仓库在 `.agents/skills/` 下提供两个经过评审的项目级 Skill：
+仓库在 `.agents/skills/` 下提供三个经过评审的项目级 Skill：
 
 - `$sumi-docs-use` 选择本地、默认或已发布语料，并验证实际运行的 MCP 或 Web 进程；
-- `$sumi-docs-pr` 分类变更、选择工程记录和验证门，并在不发布的前提下准备 Pull Request。
+- `$sumi-docs-pr` 分类变更、选择工程记录和验证门，并在不发布的前提下准备 Pull Request；
+- `$sumi-docs-audit` 对仓库、架构或候选发布执行只读且绑定证据的审计，不改变本地或远程
+  状态。
 
 这些 Skill 是可选的工作流路由器，不会复制 MCP 解析逻辑、保存可变状态，也不会取代
 宿主的项目受信与 MCP 批准机制。

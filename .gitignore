@@ -33,6 +33,10 @@ Thumbs.db
 .agents/**
 !.agents/skills/
 .agents/skills/**
+!.agents/skills/sumi-docs-audit/
+!.agents/skills/sumi-docs-audit/SKILL.md
+!.agents/skills/sumi-docs-audit/agents/
+!.agents/skills/sumi-docs-audit/agents/openai.yaml
 !.agents/skills/sumi-docs-use/
 !.agents/skills/sumi-docs-use/SKILL.md
 !.agents/skills/sumi-docs-use/agents/

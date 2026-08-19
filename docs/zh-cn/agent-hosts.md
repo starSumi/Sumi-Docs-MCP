@@ -30,9 +30,10 @@ node packages/mcp/dist/index.js doctor --json
 
 ## 项目级 Skill 与直接使用 MCP
 
-当任务描述匹配时，Codex 会从 `.agents/skills/` 发现经过评审的 `$sumi-docs-use` 和
-`$sumi-docs-pr` 工作流；Claude Code 可通过仓库 instructions 读取同一份规范文件。
-它们分别覆盖安装运行和 Pull Request 准备，但普通文档查询不依赖它们。
+当任务描述匹配时，Codex 会从 `.agents/skills/` 发现经过评审的 `$sumi-docs-use`、
+`$sumi-docs-pr` 和 `$sumi-docs-audit` 工作流；Claude Code 可通过仓库 instructions
+读取同一份规范文件。它们分别覆盖安装运行、Pull Request 准备以及只读的仓库或发布
+审计，但普通文档查询不依赖它们。
 
 ## 直接使用 MCP
 
