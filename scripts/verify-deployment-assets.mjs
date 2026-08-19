@@ -110,10 +110,12 @@ function validateDockerAssets(errors) {
   requireCondition(
     dockerfile.indexOf("@sumi-os/corpus-contract build") <
       dockerfile.indexOf("@sumi-os/docs-mcp build") &&
-      dockerfile.includes("@sumi-os/docs-mcp deploy") &&
+      /pnpm --ignore-scripts\s+\\?\s*--filter @sumi-os\/docs-mcp deploy/u.test(
+        dockerfile,
+      ) &&
       dockerfile.includes("--prod") &&
       dockerfile.includes("--legacy"),
-    "Dockerfile.mcp must build the workspace dependency before a production package deploy.",
+    "Dockerfile.mcp must build the workspace dependency before a script-free production package deploy.",
     errors,
   );
   requireCondition(

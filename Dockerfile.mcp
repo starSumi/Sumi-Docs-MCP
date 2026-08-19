@@ -26,7 +26,8 @@ COPY packages/mcp packages/mcp
 
 RUN pnpm --filter @sumi-os/corpus-contract build \
     && pnpm --filter @sumi-os/docs-mcp build \
-    && pnpm --filter @sumi-os/docs-mcp deploy \
+    && pnpm --ignore-scripts \
+      --filter @sumi-os/docs-mcp deploy \
       --prod \
       --legacy \
       /opt/sumi-docs
