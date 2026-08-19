@@ -6,7 +6,7 @@ import { sanitizeDiagnostic } from "./utils/diagnostics.js";
 import {
   isRemoteDocsSource,
   normalizeRemoteManifestUrl,
-} from "./vfs/remote-source.js";
+} from "./utils/remote-source-url.js";
 import { VERSION } from "./version.js";
 
 function printHelp(): void {
@@ -185,13 +185,13 @@ export async function run(argv: string[]): Promise<void> {
 
   const parsedOptions = parseCliOptions(argv);
   if (!parsedOptions) return;
-  const { resolveCliOptions } = await import("./project-config.js");
-  const options = await resolveCliOptions(parsedOptions);
-
-  const [{ DocsMcpServer }, { serveStdio }] = await Promise.all([
+  const serverModules = Promise.all([
     import("./mcp/server.js"),
     import("@modelcontextprotocol/server/stdio"),
   ]);
+  const { resolveCliOptions } = await import("./project-config.js");
+  const options = await resolveCliOptions(parsedOptions);
+  const [{ DocsMcpServer }, { serveStdio }] = await serverModules;
 
   const loadVault = async (): Promise<
     import("./vfs/DocsVault.js").DocsVault

@@ -5,6 +5,8 @@ This file records user-visible changes. Internal phase notes are retained under
 
 ## Unreleased
 
+- Replaced the host-sensitive cold-start maximum with an interleaved raw, SDK,
+  and product benchmark plus a calibrated product-over-SDK release policy.
 - Made the `serve` documentation source optional through bounded Git-aware
   project discovery and a strict `sumi-docs.config.json` contract.
 - Added `--config` with explicit CLI precedence and containment checks for

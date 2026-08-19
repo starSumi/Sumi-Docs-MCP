@@ -54,9 +54,15 @@ pnpm run example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
 pnpm run benchmark:cold-start --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 
-The benchmark measures process spawn to the first `tools/list` response. It exits
-nonzero when any measured iteration reaches the 100 ms project hard limit. That
-limit is currently an open performance requirement, not a passing status.
+The benchmark measures a new process through its first `tools/list` response.
+It randomizes starts of a raw SEA measurement baseline, an empty server using
+the public MCP SDK, and the product SEA. Release evidence uses 100 iterations
+per subject and records every observation plus median, p95, p99, maximum, errors,
+timeouts, executable digests, and the product delta from the SDK baseline.
+
+ADR-0011 defines the blocking thresholds. P99 and maximum are diagnostic; the
+former 100 ms maximum is retained only as a native-runtime stretch target.
+Benchmark probes are measurement code, not alternative product transports.
 
 ## Test layout
 

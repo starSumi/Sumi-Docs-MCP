@@ -9,8 +9,11 @@ import type {
   ManifestV1,
   ManifestV2,
 } from "@sumi-os/corpus-contract";
+import {
+  isRemoteDocsSource,
+  normalizeRemoteManifestUrl,
+} from "../utils/remote-source-url.js";
 
-const MANIFEST_FILE_NAME = "sumi-docs-manifest.json";
 const MAX_MANIFEST_BYTES = 256 * 1024;
 const MAX_DOCUMENT_BYTES = 2 * 1024 * 1024;
 const MAX_OPENAPI_BYTES = 8 * 1024 * 1024;
@@ -31,46 +34,7 @@ export interface RemoteCorpus {
   openApiContent?: string;
 }
 
-export function isRemoteDocsSource(value: string): boolean {
-  return /^https?:\/\//i.test(value);
-}
-
-function isLoopback(hostname: string): boolean {
-  return (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname === "[::1]" ||
-    hostname === "::1"
-  );
-}
-
-export function normalizeRemoteManifestUrl(value: string): URL {
-  let url: URL;
-  try {
-    url = new URL(value);
-  } catch {
-    throw new Error("Remote documentation source must be an absolute URL.");
-  }
-
-  if (
-    url.protocol !== "https:" &&
-    !(url.protocol === "http:" && isLoopback(url.hostname))
-  ) {
-    throw new Error(
-      "Remote documentation requires HTTPS; HTTP is allowed only on loopback.",
-    );
-  }
-  if (url.username || url.password || url.search || url.hash) {
-    throw new Error(
-      "Remote documentation URL must not contain credentials, a query, or a fragment.",
-    );
-  }
-  if (!url.pathname.toLowerCase().endsWith(".json")) {
-    if (!url.pathname.endsWith("/")) url.pathname += "/";
-    url.pathname += MANIFEST_FILE_NAME;
-  }
-  return url;
-}
+export { isRemoteDocsSource, normalizeRemoteManifestUrl };
 
 function isV2LocatorUrl(url: URL): boolean {
   return url.pathname.endsWith("/_mcp/v2/current.json");

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import {
   existsSync,
   mkdirSync,
@@ -27,9 +28,17 @@ import {
 import { validateLockfile } from "../scripts/verify-lockfile.mjs";
 import { readNodeRuntimeLicense } from "../scripts/node-runtime-license.mjs";
 import {
+  createSbom,
+  noticeSection,
+} from "../scripts/build-compliance-artifacts.mjs";
+import {
   REQUIRED_PNPM_VERSION,
   validatePackageManager,
 } from "../scripts/enforce-package-manager.mjs";
+import {
+  verifyDependencyGraph,
+  verifyNotices,
+} from "../scripts/verify-compliance-artifacts.mjs";
 import {
   loadWorkflowPolicyInput,
   validateWorkflowPolicy,
@@ -260,6 +269,234 @@ test("Node runtime license discovery supports archive and Unix layouts", () => {
   }
 });
 
+test("compliance dependency edges resolve scoped pnpm-style siblings", () => {
+  const root = mkdtempSync(join(tmpdir(), "sumi-compliance-graph-"));
+  const appPath = join(root, "app");
+  const parentPath = join(appPath, "node_modules", "@fixture", "parent");
+  const childPath = join(appPath, "node_modules", "@fixture", "child");
+  const writePackage = (path, manifest) => {
+    mkdirSync(path, { recursive: true });
+    writeFileSync(join(path, "package.json"), JSON.stringify(manifest));
+    writeFileSync(join(path, "index.js"), "export {};\n");
+  };
+
+  try {
+    const appManifest = {
+      name: "fixture-app",
+      version: "1.0.0",
+      license: "MIT",
+      dependencies: { "@fixture/parent": "1.0.0" },
+    };
+    const parentManifest = {
+      name: "@fixture/parent",
+      version: "1.0.0",
+      license: "MIT",
+      exports: { ".": { import: "./index.js" } },
+      dependencies: { "@fixture/child": "1.0.0" },
+    };
+    const childManifest = {
+      name: "@fixture/child",
+      version: "1.0.0",
+      license: "MIT",
+      main: "index.js",
+    };
+    writePackage(appPath, appManifest);
+    writePackage(parentPath, parentManifest);
+    writePackage(childPath, childManifest);
+
+    const components = [
+      {
+        identity: "@fixture/child@1.0.0",
+        name: "@fixture/child",
+        version: "1.0.0",
+        license: "MIT",
+        path: childPath,
+      },
+      {
+        identity: "@fixture/parent@1.0.0",
+        name: "@fixture/parent",
+        version: "1.0.0",
+        license: "MIT",
+        path: parentPath,
+      },
+    ];
+    const inventory = new Map(
+      components.map((component) => [component.identity, component]),
+    );
+    const artifact = {
+      key: "fixture",
+      artifactRole: "test-input",
+      manifest: appManifest,
+      manifestPath: join(appPath, "package.json"),
+      rootIdentity: "fixture-app@1.0.0",
+      components: new Set(inventory.keys()),
+      firstParty: new Map(),
+      includeNode: false,
+    };
+    const bom = createSbom(artifact, components);
+    assert.deepEqual(
+      bom.dependencies.find((entry) => entry.ref === "fixture-app@1.0.0")
+        .dependsOn,
+      ["@fixture/parent@1.0.0"],
+    );
+    assert.deepEqual(
+      bom.dependencies.find((entry) => entry.ref === "@fixture/parent@1.0.0")
+        .dependsOn,
+      ["@fixture/child@1.0.0"],
+    );
+    assert.doesNotThrow(() => verifyDependencyGraph(bom, artifact, inventory));
+
+    const missingEdge = structuredClone(bom);
+    missingEdge.dependencies.find(
+      (entry) => entry.ref === "@fixture/parent@1.0.0",
+    ).dependsOn = [];
+    assert.throws(
+      () => verifyDependencyGraph(missingEdge, artifact, inventory),
+      /dependency edge set is incorrect/u,
+    );
+
+    const missingPath = join(root, "orphan", "@fixture", "missing");
+    const missingComponent = {
+      identity: "@fixture/missing@1.0.0",
+      name: "@fixture/missing",
+      version: "1.0.0",
+      license: "MIT",
+      path: missingPath,
+    };
+    writePackage(missingPath, {
+      name: missingComponent.name,
+      version: missingComponent.version,
+      license: missingComponent.license,
+      main: "index.js",
+    });
+    writeFileSync(
+      join(parentPath, "package.json"),
+      JSON.stringify({
+        ...parentManifest,
+        dependencies: {
+          ...parentManifest.dependencies,
+          "@fixture/missing": "1.0.0",
+        },
+      }),
+    );
+    components.push(missingComponent);
+    inventory.set(missingComponent.identity, missingComponent);
+    artifact.components.add(missingComponent.identity);
+    assert.throws(
+      () => createSbom(artifact, components),
+      /Selected dependency @fixture\/missing cannot be resolved/u,
+    );
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
+test("compliance notices require non-empty license evidence", () => {
+  const root = mkdtempSync(join(tmpdir(), "sumi-compliance-license-"));
+  const component = {
+    identity: "fixture-license@1.0.0",
+    name: "fixture-license",
+    version: "1.0.0",
+    license: "MIT",
+    path: root,
+  };
+
+  try {
+    writeFileSync(join(root, "NOTICE"), "Supplemental attribution.\n");
+    assert.throws(
+      () => noticeSection(component, "test-input", new Map()),
+      /No non-empty license file or exact reviewed override/u,
+    );
+
+    writeFileSync(join(root, "LICENSE"), "  \n");
+    assert.throws(
+      () => noticeSection(component, "test-input", new Map()),
+      /No non-empty license file or exact reviewed override/u,
+    );
+
+    const badOverride = new Map([
+      [
+        component.identity,
+        {
+          license: "MIT",
+          source: "https://example.invalid/license",
+          sha256: "0".repeat(64),
+          text: "Reviewed terms",
+          evidence: [],
+        },
+      ],
+    ]);
+    assert.throws(
+      () => noticeSection(component, "test-input", badOverride),
+      /override drifted/u,
+    );
+
+    writeFileSync(join(root, "LICENSE"), "Fixture license terms.\n");
+    const section = noticeSection(component, "test-input", new Map());
+    assert.match(section, /^License evidence: package-file$/mu);
+    assert.match(section, /^License source: LICENSE$/mu);
+    assert.match(section, /^Supplemental notice source: NOTICE$/mu);
+
+    const noticesPath = join(root, "THIRD_PARTY_NOTICES.txt");
+    const bom = {
+      components: [
+        {
+          name: component.name,
+          "bom-ref": component.identity,
+          properties: [],
+        },
+      ],
+    };
+    writeFileSync(
+      noticesPath,
+      `THIRD-PARTY SOFTWARE NOTICES\n\n${section}\n\n${"=".repeat(80)}\n`,
+    );
+    assert.doesNotThrow(() => verifyNotices(noticesPath, bom));
+
+    const malformed = section
+      .replace("License source: LICENSE", "License source: NOTICE")
+      .replace("----- LICENSE -----", "----- NOTICE -----");
+    writeFileSync(
+      noticesPath,
+      `THIRD-PARTY SOFTWARE NOTICES\n\n${malformed}\n\n${"=".repeat(80)}\n`,
+    );
+    assert.throws(
+      () => verifyNotices(noticesPath, bom),
+      /package-file evidence is incomplete/u,
+    );
+
+    rmSync(join(root, "LICENSE"));
+    const reviewedText = "Reviewed license terms";
+    const validOverride = new Map([
+      [
+        component.identity,
+        {
+          license: "MIT",
+          source: "https://example.invalid/license",
+          sha256: createHash("sha256").update(reviewedText).digest("hex"),
+          text: reviewedText,
+          evidence: [],
+        },
+      ],
+    ]);
+    assert.match(
+      noticeSection(component, "test-input", validOverride),
+      /^License evidence: reviewed-override$/mu,
+    );
+    assert.throws(
+      () =>
+        noticeSection(
+          { ...component, identity: "fixture-license@1.0.1" },
+          "test-input",
+          validOverride,
+        ),
+      /No non-empty license file or exact reviewed override/u,
+    );
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
+});
+
 test("product source directories contain TypeScript only", () => {
   const sourceRoots = [
     "apps/web/src",
@@ -413,7 +650,7 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   weakened.candidate.jobs.build.steps.find(
     (step) => step.id === "performance",
   ).run =
-    "pnpm run benchmark:cold-start -- --iterations 30 --output ../../artifacts/cold-start.json";
+    "pnpm run benchmark:cold-start -- --iterations 100 --output ../../artifacts/cold-start.json";
   weakened.candidate.jobs.build.steps.find(
     (step) => step.name === "Package candidate",
   ).run = [
@@ -437,4 +674,39 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   assert.ok(errors.some((error) => error.includes("compliance material")));
   assert.ok(errors.some((error) => error.includes("built SEA binary")));
   assert.ok(errors.some((error) => error.includes("pinned pnpm")));
+});
+
+test("candidate cold-start evidence command rejects weakened or custom baselines", () => {
+  const exactCommand = [
+    "New-Item -ItemType Directory -Force artifacts | Out-Null",
+    "pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 100 --executable artifacts/bin/sumi-docs-mcp.exe --output ../../artifacts/cold-start.json",
+    "exit $LASTEXITCODE",
+  ].join("\n");
+  const variants = [
+    exactCommand.replace("--docs examples/basic/docs ", ""),
+    exactCommand.replace("--executable artifacts/bin/sumi-docs-mcp.exe ", ""),
+    exactCommand.replace("--iterations 100", "--iterations 1"),
+    exactCommand.replace(" --output", " --raw-executable custom.exe --output"),
+    exactCommand.replace(" --output", " --sdk-executable custom.exe --output"),
+    exactCommand.replace(" --output ../../artifacts/cold-start.json", ""),
+  ];
+
+  const valid = loadWorkflowPolicyInput();
+  valid.candidate.jobs.build.steps.find(
+    (step) => step.id === "performance",
+  ).run = exactCommand;
+  assert.deepEqual(validateWorkflowPolicy(valid), []);
+
+  for (const run of variants) {
+    const weakened = structuredClone(valid);
+    weakened.candidate.jobs.build.steps.find(
+      (step) => step.id === "performance",
+    ).run = run;
+    assert.ok(
+      validateWorkflowPolicy(weakened).some((error) =>
+        error.includes("performance diagnostics"),
+      ),
+      run,
+    );
+  }
 });

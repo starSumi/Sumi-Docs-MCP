@@ -8,6 +8,8 @@ const PNPM_BOOTSTRAP = [
   "npm install --global --ignore-scripts --registry https://registry.npmjs.org pnpm@10.26.0",
   "pnpm --version",
 ].join("\n");
+const CANDIDATE_COLD_START_COMMAND =
+  "pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 100 --executable artifacts/bin/sumi-docs-mcp.exe --output ../../artifacts/cold-start.json";
 const ACTIVE_WORKFLOWS = new Set([
   "candidate.yml",
   "ci.yml",
@@ -161,18 +163,16 @@ export function validateWorkflowPolicy({
     (step) => step.id === "enforce-performance",
   );
   const enforcement = buildSteps[enforcementIndex];
+  const performanceRun = String(performance?.run ?? "");
+  const benchmarkLines = performanceRun
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter((line) => line.includes("benchmark:cold-start"));
   if (
     performance?.["continue-on-error"] !== true ||
-    !String(performance?.run ?? "").includes(
-      "benchmark:cold-start --iterations 30",
-    ) ||
-    String(performance?.run ?? "").includes(
-      "benchmark:cold-start -- --iterations",
-    ) ||
-    !String(performance?.run ?? "").includes(
-      "--output ../../artifacts/cold-start.json",
-    ) ||
-    String(performance?.run ?? "").includes("*>") ||
+    benchmarkLines.length !== 1 ||
+    benchmarkLines[0] !== CANDIDATE_COLD_START_COMMAND ||
+    performanceRun.includes("*>") ||
     enforcementIndex <= uploadIndex ||
     !String(enforcement?.if ?? "").includes("!cancelled()") ||
     !String(enforcement?.run ?? "").includes("steps.performance.outcome")

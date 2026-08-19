@@ -114,6 +114,7 @@
     "docs/decisions/0008-product-workspace-topology.md",
     "docs/decisions/0009-reconciliation-and-control-plane-state.md",
     "docs/decisions/0010-runtime-migration-gate.md",
+    "docs/decisions/0011-calibrated-cold-start-policy.md",
     "docs/configuration.md",
     "docs/contributing.md",
     "docs/development.md",

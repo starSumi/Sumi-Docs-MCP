@@ -83,7 +83,7 @@ jobs:
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force artifacts | Out-Null
-          pnpm run benchmark:cold-start --iterations 30 --executable artifacts/bin/sumi-docs-mcp.exe --output ../../artifacts/cold-start.json
+          pnpm run benchmark:cold-start --docs examples/basic/docs --iterations 100 --executable artifacts/bin/sumi-docs-mcp.exe --output ../../artifacts/cold-start.json
           exit $LASTEXITCODE
 
       - name: Package candidate

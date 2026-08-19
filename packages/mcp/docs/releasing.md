@@ -17,12 +17,14 @@ pnpm run smoke:mcp
 pnpm run pack:mcp
 pnpm run build:sea
 pnpm --filter @sumi-os/docs-mcp example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe
-pnpm run benchmark:cold-start --iterations 5 --executable artifacts/bin/sumi-docs-mcp.exe
+pnpm run benchmark:cold-start --iterations 100 --executable artifacts/bin/sumi-docs-mcp.exe
 ```
 
 `pnpm run pack:mcp` is a dry run. It validates the package boundary but does not
-produce a release tarball. The cold-start hard limit is 100 ms for every
-measured run; a failed performance command blocks release.
+produce a release tarball. The calibrated ADR-0011 policy compares the product
+with a same-host empty official-SDK baseline. A failed performance command
+blocks release; p99 and maximum remain diagnostic rather than single-sample
+release thresholds.
 
 ## Build an acceptance candidate
 
@@ -34,8 +36,9 @@ provide:
 
 The unprivileged build job checks that the selected SHA remains the latest
 `main`, runs the repository and cross-product verification suites on Node.js
-25.5.0, builds and smoke-tests the Windows executable, and records 30 cold-start
-runs. It uploads one commit-bound artifact retained for 14 days:
+25.5.0, builds and smoke-tests the Windows executable, and records 100 randomly
+interleaved starts for each calibrated benchmark subject. It uploads one
+commit-bound artifact retained for 14 days:
 
 - `sumi-docs-mcp-<commit>.zip`;
 - `sumi-docs-mcp-<commit>.zip.sha256`;
