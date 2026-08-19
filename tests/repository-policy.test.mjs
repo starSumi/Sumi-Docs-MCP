@@ -686,6 +686,46 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   assert.ok(errors.some((error) => error.includes("deployment authority")));
 });
 
+test("Pages publication fails closed after an upstream failure", () => {
+  const input = loadWorkflowPolicyInput();
+  const cases = [
+    {
+      mutate(workflows) {
+        workflows.pages.jobs.build.steps.find(
+          (step) => step.id === "freshness",
+        ).if = "${{ !cancelled() }}";
+      },
+      expected: "verified Web artifact",
+    },
+    {
+      mutate(workflows) {
+        workflows.pages.jobs.build.steps.find(
+          (step) => step.name === "Upload verified Pages artifact",
+        ).if =
+          "${{ !cancelled() && steps.freshness.outputs.current == 'true' }}";
+      },
+      expected: "verified Web artifact",
+    },
+    {
+      mutate(workflows) {
+        workflows.pages.jobs.deploy.if =
+          "${{ github.ref == 'refs/heads/main' && !cancelled() }}";
+      },
+      expected: "deployment authority",
+    },
+  ];
+
+  for (const testCase of cases) {
+    const weakened = structuredClone(input);
+    testCase.mutate(weakened);
+    assert.ok(
+      validateWorkflowPolicy(weakened).some((error) =>
+        error.includes(testCase.expected),
+      ),
+    );
+  }
+});
+
 test("candidate cold-start evidence command rejects weakened or custom baselines", () => {
   const exactCommand = [
     "New-Item -ItemType Directory -Force artifacts | Out-Null",
