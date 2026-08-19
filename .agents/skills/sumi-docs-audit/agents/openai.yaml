@@ -1,0 +1,4 @@
+interface:
+  display_name: "Sumi Docs: Audit"
+  short_description: "Audit Sumi Docs health and release evidence"
+  default_prompt: "Use $sumi-docs-audit to perform a read-only, evidence-bound audit of the current Sumi Docs workspace."

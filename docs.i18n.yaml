@@ -7,8 +7,8 @@ docs/configuration.md: c581b8a92a501a8a612a768dab4c35bfd3eaef69
 docs/zh-cn/configuration.md: a21cf473ce7ea3deab8b016c375ea417ba917a5e
 docs/tool-reference.md: 7b491714d1e10aa7740a83c45af09af5f0b9d600
 docs/zh-cn/tool-reference.md: 1bf2b982fbf5fe840bb0f20589de2d153c31abed
-docs/agent-hosts.md: 1da9cd1dd05d33efb12d4448924d5d5100b3dd94
-docs/zh-cn/agent-hosts.md: 2b824018aa5cf6a477bf4c1de43edb74ad77f31e
+docs/agent-hosts.md: 6bf0fe3cdde5cd3cf5a6b480cc659f77060d4a7a
+docs/zh-cn/agent-hosts.md: 66b5d7a26efe2d904c8cb24d9fa52f4b7b89ef86
 docs/troubleshooting.md: 2a2bf521d39857d1c5bebdabeb77acf2e182608b
 docs/zh-cn/troubleshooting.md: 8b17b5af7d24e9ef6a6ef2bd2f71bc8e4359dfb8
 docs/remote-sources.md: 5d6f7921a7ddc467582c61fcb3cfead880545277
@@ -31,8 +31,8 @@ docs/operations/evaluation-matrix.md: 10e0842dd077bd7643b2598132bd269ab923c3d9
 docs/zh-cn/operations/evaluation-matrix.md: 9e59cab5736662ee350dabeb296c21bb97f6b2fe
 docs/contributing.md: b8026c0fb3774ce2cdf459fe62a8927cd05158b3
 docs/zh-cn/contributing.md: c97c029a0b1843695cd5824896a9fa81d5e4226a
-docs/skills-and-orchestration.md: 991222cb02dabed19994e97a64f15d2724018b6e
-docs/zh-cn/skills-and-orchestration.md: b7a0b3fcf56c93b0630436b726f5f084a8260e8c
+docs/skills-and-orchestration.md: a6ffc08ab4c0334d500a29d9b8c4e57b31133295
+docs/zh-cn/skills-and-orchestration.md: 4c414ce8346acb8ce2e6e33c9a9ab9f906cae9fa
 docs/development.md: 26fda25d59376af67f97a406db5ecd145ef0bf5c
 docs/zh-cn/development.md: b2d680294fcf7144cb7682fbf13f38a7fbb22f91
 docs/releasing.md: cdccc7baba3907b474faee8f131d35d45d2f1985

@@ -26,12 +26,15 @@ by the client host or a separately reviewed controller.
 
 ## Repository Skills
 
-The repository ships two reviewed, project-scoped Skills under `.agents/skills/`:
+The repository ships three reviewed, project-scoped Skills under `.agents/skills/`:
 
 - `$sumi-docs-use` selects a local, default, or published corpus and verifies
   the active MCP or Web process;
 - `$sumi-docs-pr` classifies a change, selects its engineering record and
-  validation gates, and prepares a pull request without publishing it.
+  validation gates, and prepares a pull request without publishing it;
+- `$sumi-docs-audit` performs a read-only, evidence-bound repository,
+  architecture, or release-candidate audit without changing local or remote
+  state.
 
 These Skills are optional workflow routers. They do not duplicate MCP parsing,
 contain mutable state, or replace the host's project trust and MCP approval.

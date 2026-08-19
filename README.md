@@ -64,10 +64,11 @@ The service exposes MCP at `http://localhost:3000/mcp`, liveness at `/healthz`,
 and corpus readiness at `/readyz`. Docker is optional for source development;
 public deployment still requires HTTPS termination and explicit Host policy.
 
-The repository also provides two optional project workflows under
-`.agents/skills/`: `$sumi-docs-use` for setup and operation, and
-`$sumi-docs-pr` for proposal and pull-request preparation. They route work but
-do not replace MCP or publish remote changes.
+The repository also provides three optional project workflows under
+`.agents/skills/`: `$sumi-docs-use` for setup and operation, `$sumi-docs-pr`
+for proposal and pull-request preparation, and `$sumi-docs-audit` for
+read-only, evidence-bound repository and release audits. They route work but do
+not replace MCP or publish remote changes.
 
 ## Workspace
 

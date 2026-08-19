@@ -39,11 +39,12 @@ server through the host's supported integration surface.
 
 ## Where a Skill belongs
 
-The product workspace ships the optional project Skills `$sumi-docs-use` and
-`$sumi-docs-pr` under the canonical `.agents/skills/` directory. They route
-setup, operation, and contribution workflows; they do not implement or proxy
-MCP. Broader maintainer behavior belongs in the local developer's governed
-global skill catalog and must activate only for the Sumi Docs project family.
+The product workspace ships the optional project Skills `$sumi-docs-use`,
+`$sumi-docs-pr`, and `$sumi-docs-audit` under the canonical `.agents/skills/`
+directory. They route setup, operation, contribution, and read-only audit
+workflows; they do not implement or proxy MCP. Broader maintainer behavior
+belongs in the local developer's governed global skill catalog and must
+activate only for the Sumi Docs project family.
 
 No Skill is required to query the server. The agent host is the MCP client and
 can discover the four tools from protocol initialization and `tools/list`.

@@ -22,6 +22,27 @@ Nested `AGENTS.md` files continue to govern package-specific security and
 validation. The root contract wins for workspace topology and cross-package
 commands.
 
+## Reconciliation model
+
+- For any mutable orchestration resource, keep versioned desired `spec`
+  separate from controller-owned `status`. Machine-readable `conditions` bind
+  `observedGeneration` to the `generation` actually observed and record type,
+  status, reason, and immutable evidence. Stale or incomplete evidence is
+  `Unknown`, never success.
+- Automation follows an observe-diff-reconcile loop. Reconciliation is
+  idempotent, cancellation-aware, and restartable. Each mutable resource has one
+  logical writer protected by a lease and monotonically increasing fencing
+  token. Promotion uses compare-and-set against the expected generation or
+  revision; conflicts and unavailable preconditions fail closed.
+- `apps/web` owns staging, sealing, atomic promotion, and rollback of complete
+  publication artifacts. Any future controller owns leases, events, retries,
+  checkpoints, and cleanup outside the repository. Skills route intent and
+  procedure only; `packages/mcp` remains a stateless, read-only data plane.
+- Preserve the last verified artifact when reconciliation fails, and treat
+  rollback as an explicit, evidence-backed generation transition. Do not add a
+  generic orchestration API, distributed state store, scheduler, or extension
+  framework without a measured workload and an accepted decision.
+
 ## Invariants
 
 - Preserve manifest v1 at its existing URL and shape while v2 is introduced in
