@@ -3,6 +3,8 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readNodeRuntimeLicense } from "./node-runtime-license.mjs";
+
 const projectRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
 const complianceRoot = join(projectRoot, "artifacts", "compliance");
 const localMetadataPatterns = [
@@ -106,6 +108,7 @@ function verifyMcp() {
   const bomPath = join(root, "bom.cdx.json");
   const noticesPath = join(root, "THIRD_PARTY_NOTICES.txt");
   const nodeLicensePath = join(root, "NODEJS_LICENSE.txt");
+  const nodeRuntimeLicense = readNodeRuntimeLicense();
   const bom = verifyBom(bomPath, "@sumi-os/docs-mcp");
   const nodeComponents = bom.components.filter(
     (component) => component.name === "Node.js",
@@ -122,9 +125,7 @@ function verifyMcp() {
   }
   if (
     !existsSync(nodeLicensePath) ||
-    !readFileSync(nodeLicensePath).equals(
-      readFileSync(join(dirname(process.execPath), "LICENSE")),
-    )
+    !readFileSync(nodeLicensePath).equals(nodeRuntimeLicense.content)
   ) {
     throw new Error(
       "The MCP artifact does not contain the Node runtime license.",

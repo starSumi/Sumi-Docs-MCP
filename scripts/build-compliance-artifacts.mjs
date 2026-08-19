@@ -13,6 +13,8 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { readNodeRuntimeLicense } from "./node-runtime-license.mjs";
+
 const projectRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const outputRoot = join(projectRoot, "artifacts", "compliance");
 const seaMetafilePath = join(
@@ -554,9 +556,8 @@ function writeArtifactCompliance(artifact, inventory) {
     "utf8",
   );
   if (artifact.includeNode) {
-    const nodeLicense = join(dirname(process.execPath), "LICENSE");
-    readFileSync(nodeLicense);
-    copyFileSync(nodeLicense, join(target, "NODEJS_LICENSE.txt"));
+    const nodeLicense = readNodeRuntimeLicense();
+    copyFileSync(nodeLicense.path, join(target, "NODEJS_LICENSE.txt"));
   }
   process.stdout.write(
     `Generated ${artifact.key} compliance artifacts for ${selectedComponents.length} third-party component(s).\n`,

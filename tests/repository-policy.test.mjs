@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 
@@ -16,6 +25,7 @@ import {
   validateHostEntries,
 } from "../scripts/verify-host-files.mjs";
 import { validateLockfile } from "../scripts/verify-lockfile.mjs";
+import { readNodeRuntimeLicense } from "../scripts/node-runtime-license.mjs";
 import {
   REQUIRED_PNPM_VERSION,
   validatePackageManager,
@@ -221,6 +231,33 @@ test("the install lifecycle requires the pinned pnpm version", () => {
   );
   assert.equal(rejected.status, 1);
   assert.match(rejected.stderr, /Use pnpm/u);
+});
+
+test("Node runtime license discovery supports archive and Unix layouts", () => {
+  const root = mkdtempSync(join(tmpdir(), "sumi-node-license-"));
+  try {
+    const archiveRoot = join(root, "archive");
+    const unixBin = join(root, "unix", "bin");
+    mkdirSync(archiveRoot, { recursive: true });
+    mkdirSync(unixBin, { recursive: true });
+    writeFileSync(join(archiveRoot, "LICENSE"), "archive license\n");
+    writeFileSync(join(root, "unix", "LICENSE"), "unix license\n");
+
+    assert.equal(
+      readNodeRuntimeLicense(join(archiveRoot, "node.exe")).content.toString(),
+      "archive license\n",
+    );
+    assert.equal(
+      readNodeRuntimeLicense(join(unixBin, "node")).content.toString(),
+      "unix license\n",
+    );
+    assert.throws(
+      () => readNodeRuntimeLicense(join(root, "missing", "bin", "node")),
+      /distribution license was not found/u,
+    );
+  } finally {
+    rmSync(root, { force: true, recursive: true });
+  }
 });
 
 test("product source directories contain TypeScript only", () => {
