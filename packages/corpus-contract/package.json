@@ -2,9 +2,21 @@
   "name": "@sumi-os/corpus-contract",
   "version": "0.1.0",
   "description": "Versioned Sumi documentation corpus schemas and conformance helpers.",
-  "private": true,
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  },
   "type": "module",
   "sideEffects": false,
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/starSumi/Sumi-Docs-MCP.git",
+    "directory": "packages/corpus-contract"
+  },
+  "homepage": "https://github.com/starSumi/Sumi-Docs-MCP/tree/main/packages/corpus-contract#readme",
+  "bugs": {
+    "url": "https://github.com/starSumi/Sumi-Docs-MCP/issues"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
