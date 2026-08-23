@@ -3,6 +3,12 @@
 This file records user-visible changes. Internal phase notes are retained under
 `docs/history/` and are not release records.
 
+## 0.1.1 - 2026-08-23
+
+- Corrected the published-package status and npm scope in operator-facing
+  documentation; registry publication remains separate from Pages, tags, and
+  supported binary releases.
+
 ## Unreleased
 
 - Added stateless Streamable HTTP to the Node.js distribution while preserving

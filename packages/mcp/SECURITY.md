@@ -2,8 +2,9 @@
 
 ## Supported status
 
-This project is pre-release and has no published package or supported release
-line. Security fixes are applied to the current source checkout.
+This project is pre-release and has no supported release line. The public npm
+packages are published under `@sumi-labs`; security fixes are applied to the
+current source checkout.
 
 ## Reporting
 

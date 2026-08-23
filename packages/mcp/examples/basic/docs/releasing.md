@@ -1,9 +1,9 @@
 # Release process
 
 Candidate construction, human acceptance, and publication are separate gates.
-The current repository automates candidate construction only. It does not
-publish an npm registry package, deploy the documentation site, create a tag, or create a
-GitHub Release.
+The current repository automates candidate construction only. npm publication
+is a separate authenticated manual gate; this workflow does not publish the
+package, deploy the documentation site, create a tag, or create a GitHub Release.
 
 ## Local preflight
 

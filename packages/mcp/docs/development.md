@@ -85,8 +85,9 @@ the compiled distribution, active operator documentation, examples, project
 policies, README, and license. Local state, historical reports, tests, and SEA
 artifacts are excluded.
 
-The npm registry package is not currently published. Do not document `npx` or global
-installation as supported until registry publication is verified.
+The npm registry package is published as `@sumi-labs/docs-mcp`. Registry
+publication does not make the unsigned standalone executable a supported release
+binary, and it does not create a GitHub Release.
 
 The repository candidate and human-acceptance workflow is documented in
 [releasing.md](releasing.md). It validates the package boundary, builds and

@@ -103,7 +103,7 @@ test("Streamable HTTP exposes the same stateless tool surface", async () => {
     assert.deepEqual(await health.json(), {
       status: "ok",
       service: "sumi-docs-mcp",
-      version: "0.1.0",
+      version: "0.1.1",
       protocolVersion: "2026-07-28",
       transport: "streamable-http",
       buildRevision: "0123456789abcdef0123456789abcdef01234567",
@@ -115,7 +115,7 @@ test("Streamable HTTP exposes the same stateless tool surface", async () => {
     assert.deepEqual(await readiness.json(), {
       status: "ready",
       service: "sumi-docs-mcp",
-      version: "0.1.0",
+      version: "0.1.1",
       protocolVersion: "2026-07-28",
       transport: "streamable-http",
       buildRevision: "0123456789abcdef0123456789abcdef01234567",

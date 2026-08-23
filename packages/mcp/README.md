@@ -6,9 +6,10 @@ the same four tools over local stdio or stateless Streamable HTTP: list
 documents, search by keyword, fetch one document, and retrieve an OpenAPI
 specification.
 
-Source is hosted at [GitHub](https://github.com/starSumi/Sumi-Docs-MCP). No npm
-package or GitHub Release has been published for pre-release `0.1.0`; run the
-checkout locally or build the documented executable artifact.
+Source is hosted at [GitHub](https://github.com/starSumi/Sumi-Docs-MCP). The npm
+package is published as `@sumi-labs/docs-mcp`; this pre-release still has no
+tagged GitHub Release or supported binary. Run the checkout locally or build the
+documented executable artifact.
 
 ## Quick start
 
