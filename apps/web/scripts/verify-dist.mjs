@@ -5,7 +5,7 @@ import {
   assertIntegrity,
   parseCurrentLocatorV2,
   parseLocatedManifestV2,
-} from "@sumi-os/corpus-contract";
+} from "@sumi-labs/corpus-contract";
 import {
   catalogPublisherDocuments,
   contentCatalog,
@@ -384,7 +384,7 @@ assert.match(
   chineseHome,
   /href="https:\/\/github\.com\/starSumi\/Sumi-Docs-MCP"/,
 );
-assert.match(apiReference, /@sumi-os\/corpus-contract/);
+assert.match(apiReference, /@sumi-labs\/corpus-contract/);
 assert.match(apiReference, /<main[^>]+lang="en"/);
 assert.doesNotMatch(apiReference, /[A-Z]:\\/u);
 assert.match(chineseApiFallback, /<main[^>]+lang="en"/);

@@ -38,7 +38,7 @@ The checked-in `sumi-docs.config.json` selects root `docs/` and the example
 OpenAPI document. Start the human site with:
 
 ```powershell
-pnpm --filter @sumi-os/docs-web dev
+pnpm --filter @sumi-labs/docs-web dev
 ```
 
 Open `http://127.0.0.1:4321`. Codex, Claude Code, and VS Code project adapters
@@ -82,8 +82,8 @@ docs/                       product handbook and default corpus
 
 | Mode                     | Command                                                             | Purpose                                        |
 | ------------------------ | ------------------------------------------------------------------- | ---------------------------------------------- |
-| Web development          | `pnpm --filter @sumi-os/docs-web dev`                               | Local browser site with reload                 |
-| MCP development          | `pnpm --filter @sumi-os/docs-mcp dev`                               | TypeScript server against its example corpus   |
+| Web development          | `pnpm --filter @sumi-labs/docs-web dev`                             | Local browser site with reload                 |
+| MCP development          | `pnpm --filter @sumi-labs/docs-mcp dev`                             | TypeScript server against its example corpus   |
 | Production build         | `pnpm run build`                                                    | Build contract, MCP, and static site           |
 | Compiled MCP             | `node packages/mcp/dist/index.js serve`                             | Serve the discovered project corpus over stdio |
 | Remote MCP endpoint      | `node packages/mcp/dist/index.js serve --transport streamable-http` | Serve the same corpus on loopback HTTP         |
