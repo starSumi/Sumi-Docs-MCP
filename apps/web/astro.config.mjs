@@ -98,7 +98,7 @@ export default defineConfig({
             collapsed: true,
           },
           typeDoc: {
-            name: "@sumi-os/corpus-contract",
+            name: "@sumi-labs/corpus-contract",
             entryFileName: "readme",
             readme: portableFilePath(
               new URL(
@@ -129,7 +129,7 @@ export default defineConfig({
               "Method",
               "TypeAlias",
             ],
-            packagesRequiringDocumentation: ["@sumi-os/corpus-contract"],
+            packagesRequiringDocumentation: ["@sumi-labs/corpus-contract"],
           },
         }),
         canonicalTypeDocRoutes(),

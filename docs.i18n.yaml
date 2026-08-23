@@ -3,8 +3,8 @@ docs/index.mdx: 6978a9e94923343554c66269daab148814c7e295
 docs/zh-cn/index.mdx: a76d979ce42207f59380887c7197e4b75cdb70d0
 docs/getting-started.md: b5c658b1e013c886ff8368867479515447483885
 docs/zh-cn/getting-started.md: 94194b5e66f3f533c06350da800b35513a9d71cc
-docs/configuration.md: c581b8a92a501a8a612a768dab4c35bfd3eaef69
-docs/zh-cn/configuration.md: a21cf473ce7ea3deab8b016c375ea417ba917a5e
+docs/configuration.md: ee91f60520220809bf91f3159d374058c6db17a2
+docs/zh-cn/configuration.md: 017ac0f914ace7a2e2a9029e5a4ae671b95e4bad
 docs/tool-reference.md: 7b491714d1e10aa7740a83c45af09af5f0b9d600
 docs/zh-cn/tool-reference.md: 1bf2b982fbf5fe840bb0f20589de2d153c31abed
 docs/agent-hosts.md: 6bf0fe3cdde5cd3cf5a6b480cc659f77060d4a7a
@@ -19,8 +19,8 @@ docs/operations/handoff.md: b55b7911543d55d0df497de6776738dcdbd962a6
 docs/zh-cn/operations/handoff.md: 103978c24527a863fed97ddfcc7c81d0c2becbb7
 docs/product/product-requirements.md: e8038b2cce450acc8f1388c16e9b19b4b91dc4f0
 docs/zh-cn/product/product-requirements.md: 263edb1266b3e3a36e945209d247afa6ed02aa2c
-docs/product/engineering-records.md: 91386ddae14bc6941919a64777657c3f8477564f
-docs/zh-cn/product/engineering-records.md: 4ce66f176863b77f68dab6059a9a25c5c44a781a
+docs/product/engineering-records.md: 03541268cbfc1e57ea9710689e21de7a2a87c4b0
+docs/zh-cn/product/engineering-records.md: 5502de9e958cb931abc63465492303b2010dafca
 docs/security.md: cef434ae8477b73d61e8f1ed296015c24c41584b
 docs/zh-cn/security.md: 07b9c83379f82aa16e6e5798018c2a6d3ac49d4f
 docs/operations/checkpoints.md: bac27398e97c78c579943e5fad9b8f57208060c5
@@ -33,7 +33,7 @@ docs/contributing.md: b8026c0fb3774ce2cdf459fe62a8927cd05158b3
 docs/zh-cn/contributing.md: c97c029a0b1843695cd5824896a9fa81d5e4226a
 docs/skills-and-orchestration.md: a6ffc08ab4c0334d500a29d9b8c4e57b31133295
 docs/zh-cn/skills-and-orchestration.md: 4c414ce8346acb8ce2e6e33c9a9ab9f906cae9fa
-docs/development.md: 26fda25d59376af67f97a406db5ecd145ef0bf5c
-docs/zh-cn/development.md: b2d680294fcf7144cb7682fbf13f38a7fbb22f91
-docs/releasing.md: cdccc7baba3907b474faee8f131d35d45d2f1985
-docs/zh-cn/releasing.md: 0040079dacf5a5ccd1ac1b43b3f7357b606489c3
+docs/development.md: e6ce875c4d07bafe0104eb580ab1363f53176260
+docs/zh-cn/development.md: a49c14cd521a28371ffac77c760fb8450e6224b6
+docs/releasing.md: 34157f0ff94e4bd033a1be194d6608677dd81573
+docs/zh-cn/releasing.md: ae735334908b6f5d1adba89c48a0cb499045ba40

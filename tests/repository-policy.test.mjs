@@ -728,7 +728,7 @@ test("active workflows enforce privilege and supersession boundaries", () => {
   weakened.candidate.jobs.build.steps.find(
     (step) => step.name === "Smoke test Windows executable",
   ).run =
-    "pnpm --filter @sumi-os/docs-mcp example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe";
+    "pnpm --filter @sumi-labs/docs-mcp example:smoke -- --executable artifacts/bin/sumi-docs-mcp.exe";
   weakened.ci.jobs.verify.steps = weakened.ci.jobs.verify.steps.filter(
     (step) => step.name !== "Install the pinned package manager",
   );
