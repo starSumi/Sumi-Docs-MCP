@@ -3,8 +3,9 @@ title: Releasing
 description: Build, review, promote, and roll back an immutable site candidate.
 ---
 
-Source publication and a product release are separate events. A commit may be
-public while no npm registry package, deployed site, tag, or GitHub Release exists.
+Source publication and product release are separate events. A commit may be
+public while the deployed site, tag, or GitHub Release does not exist. npm
+package publication is an independent, authenticated gate.
 
 Build a production candidate with an explicit public origin:
 
