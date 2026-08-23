@@ -48,8 +48,8 @@ becomes ready.
 
 | Mode                   | Entry point                                    | Purpose                                           |
 | ---------------------- | ---------------------------------------------- | ------------------------------------------------- |
-| MCP source development | `pnpm --filter @sumi-os/docs-mcp dev`          | Work on TypeScript against the checked-in example |
-| Web source development | `pnpm --filter @sumi-os/docs-web dev`          | Serve the local Starlight site with reload        |
+| MCP source development | `pnpm --filter @sumi-labs/docs-mcp dev`        | Work on TypeScript against the checked-in example |
+| Web source development | `pnpm --filter @sumi-labs/docs-web dev`        | Serve the local Starlight site with reload        |
 | Node distribution      | `node packages/mcp/dist/index.js`              | Run the compiled package from this workspace      |
 | Standalone executable  | `packages/mcp/artifacts/bin/sumi-docs-mcp.exe` | Run without an external Node installation         |
 

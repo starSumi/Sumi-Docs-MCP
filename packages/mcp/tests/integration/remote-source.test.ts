@@ -8,7 +8,7 @@ import {
   createCurrentLocatorV2,
   describeIntegrity,
   sealManifestV2,
-} from "@sumi-os/corpus-contract";
+} from "@sumi-labs/corpus-contract";
 import { DocsMcpServer } from "../../src/mcp/server.js";
 import { DocsVault } from "../../src/vfs/DocsVault.js";
 

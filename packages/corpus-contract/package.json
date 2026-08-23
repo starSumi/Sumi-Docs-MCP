@@ -1,5 +1,5 @@
 {
-  "name": "@sumi-os/corpus-contract",
+  "name": "@sumi-labs/corpus-contract",
   "version": "0.1.0",
   "description": "Versioned Sumi documentation corpus schemas and conformance helpers.",
   "publishConfig": {
