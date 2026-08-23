@@ -11,8 +11,9 @@ Sumi Docs 将一套经过评审的文档语料发布给两类使用者：
 寻址的投影，Agent 宿主是 MCP client。
 
 [源码仓库](https://github.com/starSumi/Sumi-Docs-MCP)和
-[文档站](https://starsumi.github.io/Sumi-Docs-MCP/)已公开并处于持续开发阶段。目前
-尚未发布 npm package、带 tag 的 GitHub Release 或受支持的二进制文件。
+[文档站](https://starsumi.github.io/Sumi-Docs-MCP/)已公开并处于持续开发阶段。MCP 和
+corpus-contract package 已在 `@sumi-labs` scope 下发布。目前尚未发布带 tag 的
+GitHub Release 或受支持的二进制文件。
 
 ## 前置要求
 
