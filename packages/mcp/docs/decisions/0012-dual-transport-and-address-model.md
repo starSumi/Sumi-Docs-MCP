@@ -41,8 +41,11 @@ protocol version.
 The HTTP listener binds to `127.0.0.1` by default. A non-loopback bind requires
 an explicit public-network acknowledgement and at least one allowed Host.
 Present Origin headers are validated against an allowlist. The adapter limits
-request-body size, rejects unknown paths, and retains the strict 2026 protocol
-posture. TLS termination and request-rate controls belong at the reverse proxy
+request-body size, rejects unknown paths, and serves both the modern
+`2026-07-28` envelope and the SDK's stateless `2025-06-18` legacy exchange.
+Modern requests still require a matching protocol header and request envelope;
+legacy requests are classified by the SDK and do not bypass those modern
+checks. TLS termination and request-rate controls belong at the reverse proxy
 or service platform. The process exposes a lightweight `/healthz` liveness route
 and a corpus-aware `/readyz` readiness route for that platform.
 
@@ -81,10 +84,12 @@ defaults to a non-root user with dropped capabilities.
 
 ## Validation and rollback
 
-Integration tests exercise the modern 2026 request envelope over a real
-loopback HTTP server and compare the four advertised tools with stdio. Negative
-tests cover Host and Origin validation, endpoint routing, body limits, protocol
-metadata, legacy rejection, and non-loopback CLI safeguards. When HTTP or stdio
+Integration tests exercise both the modern 2026 request envelope and the 2025
+legacy exchange over a real loopback HTTP server, plus a process-level stdio
+handshake probe. They compare the four advertised tools across transports.
+Negative tests cover Host and Origin validation, endpoint routing, body limits,
+protocol metadata, malformed modern envelopes, and non-loopback CLI safeguards.
+When HTTP or stdio
 acquires the immutable v2 projection, cross-product verification requires its
 reported revision to equal the Web current locator. Local-directory acquisition
 has no wire revision; its document bytes, paths, routes, and tool behavior are

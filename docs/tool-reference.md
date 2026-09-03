@@ -3,8 +3,11 @@ title: MCP tool reference
 description: Inputs, outputs, ordering, and errors for the four read-only tools.
 ---
 
-Sumi-Docs-MCP exposes four stateless tools. Every argument object is validated
-strictly; unknown fields and malformed values are rejected before execution.
+Sumi-Docs-MCP exposes four stateless tools. The modern protocol target is MCP
+`2026-07-28`; established hosts using the `2025-06-18` initialize exchange are
+served through the SDK's legacy path. Both paths expose the same tools and
+read-only corpus snapshot. Every argument object is validated strictly; unknown
+fields and malformed values are rejected before execution.
 
 | Tool               | Arguments                 | Result                                                                |
 | ------------------ | ------------------------- | --------------------------------------------------------------------- |

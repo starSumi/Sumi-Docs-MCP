@@ -16,6 +16,8 @@ This file records user-visible changes. Internal phase notes are retained under
 
 ## Unreleased
 
+- Added MCP protocol compatibility for established `2025-06-18` hosts over
+  stdio and stateless Streamable HTTP, with real process-level handshake tests.
 - Added stateless Streamable HTTP to the Node.js distribution while preserving
   stdio as the default and SEA transport.
 - Required the 2026 protocol version metadata on every Streamable HTTP POST and

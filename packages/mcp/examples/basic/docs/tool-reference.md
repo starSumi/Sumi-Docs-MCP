@@ -10,10 +10,12 @@ process restart. Clients that do not load a repository Skill can use this native
 protocol guidance without changing the tool contract.
 
 Sumi-Docs-MCP exposes four read-only tools over the official stdio and
-Streamable HTTP adapters. The
-implemented protocol target is MCP `2026-07-28`. A 2026 client may send
-`tools/list` as its first request with the required request metadata; the server
-does not require a legacy initialize handshake.
+Streamable HTTP adapters. The modern protocol target is MCP `2026-07-28`.
+Established clients that still use MCP `2025-06-18` are served through the SDK's
+stateless legacy path. A modern client may send `tools/list` as its first request
+with the required request metadata; a legacy client may use the usual
+`initialize` and `notifications/initialized` exchange instead. The two paths
+share the same read-only tools and corpus snapshot.
 
 Every tool result contains one text content item. For successful calls, that
 text is JSON encoded and `_meta` contains `protocolVersion`, `capabilities`,

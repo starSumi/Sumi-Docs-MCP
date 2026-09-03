@@ -5,10 +5,10 @@ docs/getting-started.md: b5c658b1e013c886ff8368867479515447483885
 docs/zh-cn/getting-started.md: 94194b5e66f3f533c06350da800b35513a9d71cc
 docs/configuration.md: ee91f60520220809bf91f3159d374058c6db17a2
 docs/zh-cn/configuration.md: 017ac0f914ace7a2e2a9029e5a4ae671b95e4bad
-docs/tool-reference.md: 7b491714d1e10aa7740a83c45af09af5f0b9d600
-docs/zh-cn/tool-reference.md: 1bf2b982fbf5fe840bb0f20589de2d153c31abed
-docs/agent-hosts.md: 9842e043e633c331f791f1e3578f7d0b82ff84e0
-docs/zh-cn/agent-hosts.md: a1d7b73ddbd27a42d7708c59d3c072622fea4571
+docs/tool-reference.md: db7201d2780da9e7defeea2f80a7e8f7c702f725
+docs/zh-cn/tool-reference.md: 331f5d878a83143d37959ddd163e638d2545fceb
+docs/agent-hosts.md: 4ab26667eaa0b4bc80caf83059371e3ca2333c7f
+docs/zh-cn/agent-hosts.md: c3f90f2601f42087143d8fd1317c45eb78b60f7f
 docs/troubleshooting.md: 2a2bf521d39857d1c5bebdabeb77acf2e182608b
 docs/zh-cn/troubleshooting.md: 8b17b5af7d24e9ef6a6ef2bd2f71bc8e4359dfb8
 docs/remote-sources.md: 5d6f7921a7ddc467582c61fcb3cfead880545277

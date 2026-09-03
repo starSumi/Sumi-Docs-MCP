@@ -10,8 +10,10 @@ import {
   localhostHostValidation,
   localhostOriginValidation,
   originValidation,
+  toWebRequest,
   toNodeHandler,
 } from "@modelcontextprotocol/node";
+import { isLegacyRequest } from "@modelcontextprotocol/server";
 import { sanitizeDiagnostic } from "../utils/diagnostics.js";
 import { VERSION } from "../version.js";
 import { PROTOCOL_VERSION } from "./server.js";
@@ -160,7 +162,7 @@ function closeServer(server: Server): Promise<void> {
   });
 }
 
-/** Serve the stateless 2026 MCP surface over a bounded Node.js HTTP endpoint. */
+/** Serve the stateless MCP surface over a bounded Node.js HTTP endpoint. */
 export async function serveStreamableHttp(
   factory: () => McpServer,
   options: StreamableHttpServerOptions,
@@ -171,7 +173,7 @@ export async function serveStreamableHttp(
   }
 
   const handler = createMcpHandler(factory, {
-    legacy: "reject",
+    legacy: "stateless",
     responseMode: "auto",
     onerror: (error) =>
       console.error(
@@ -258,9 +260,17 @@ export async function serveStreamableHttp(
           return;
         }
         const protocolVersion = request.headers["mcp-protocol-version"];
+        // Legacy 2025 clients intentionally have no modern request envelope.
+        // Classify with the SDK after parsing so modern requests still require
+        // a matching protocol header and envelope, including malformed ones.
+        const legacyRequest = await isLegacyRequest(
+          await toWebRequest(request, body.value),
+          body.value,
+        );
         if (
-          typeof protocolVersion !== "string" ||
-          requestProtocolVersion(body.value) !== protocolVersion
+          !legacyRequest &&
+          (typeof protocolVersion !== "string" ||
+            requestProtocolVersion(body.value) !== protocolVersion)
         ) {
           writeJsonRpcError(
             response,
