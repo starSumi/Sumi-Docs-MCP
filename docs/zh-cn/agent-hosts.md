@@ -24,6 +24,7 @@ node packages/mcp/dist/index.js doctor --json
 将仓库根目录作为 workspace 打开。Codex 使用 pnpm workspace 启动器，因此会话从仓库
 子目录启动时命令仍然有效。Claude Code 和 VS Code 使用各自记录的项目根变量，直接启动
 编译后的入口，不经过包管理器的 stdout 包装。
+Codex adapter 为冷启动进程和工具目录握手保留最多 30 秒；启动阶段不会自动构建 package。
 
 修改配置或重新构建 MCP package 后，在宿主中重启 MCP 服务。每个服务进程只保留一个
 只读语料快照，不进行 live reload。

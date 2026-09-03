@@ -2,4 +2,4 @@
 command = "node"
 args = ["packages/mcp/dist/index.js", "serve"]
 cwd = "."
-startup_timeout_sec = 15
+startup_timeout_sec = 30

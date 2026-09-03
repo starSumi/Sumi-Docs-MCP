@@ -7,8 +7,8 @@ docs/configuration.md: ee91f60520220809bf91f3159d374058c6db17a2
 docs/zh-cn/configuration.md: 017ac0f914ace7a2e2a9029e5a4ae671b95e4bad
 docs/tool-reference.md: 7b491714d1e10aa7740a83c45af09af5f0b9d600
 docs/zh-cn/tool-reference.md: 1bf2b982fbf5fe840bb0f20589de2d153c31abed
-docs/agent-hosts.md: 6bf0fe3cdde5cd3cf5a6b480cc659f77060d4a7a
-docs/zh-cn/agent-hosts.md: 66b5d7a26efe2d904c8cb24d9fa52f4b7b89ef86
+docs/agent-hosts.md: 9842e043e633c331f791f1e3578f7d0b82ff84e0
+docs/zh-cn/agent-hosts.md: a1d7b73ddbd27a42d7708c59d3c072622fea4571
 docs/troubleshooting.md: 2a2bf521d39857d1c5bebdabeb77acf2e182608b
 docs/zh-cn/troubleshooting.md: 8b17b5af7d24e9ef6a6ef2bd2f71bc8e4359dfb8
 docs/remote-sources.md: 5d6f7921a7ddc467582c61fcb3cfead880545277
