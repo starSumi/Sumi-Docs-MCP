@@ -27,7 +27,9 @@ launcher so the command also works when a session starts in a nested directory.
 Claude Code and VS Code use their documented project-root variables to launch
 the compiled entry without a package-manager stdout wrapper.
 The Codex adapter allows up to 30 seconds for a cold process and tool-catalog
-handshake; it does not build the package during startup.
+handshake; it does not build the package during startup. The server accepts
+Codex's current MCP `2025-06-18` initialize exchange as well as the modern
+`2026-07-28` envelope, so host negotiation is handled by the protocol adapter.
 
 After changing configuration or rebuilding the MCP package, restart the MCP
 server in the host. The server keeps one process-local, read-only corpus

@@ -388,7 +388,10 @@ export async function run(argv: string[]): Promise<void> {
     new DocsMcpServer(loadVault, { baseUrl: options.baseUrl }).server;
   if (options.transport === "stdio") {
     const { serveStdio } = await import("@modelcontextprotocol/server/stdio");
-    serveStdio(serverFactory, { legacy: "reject" });
+    // Codex and other established hosts may still open with the 2025 MCP
+    // initialize exchange. Let the SDK pin that connection to its stateless
+    // legacy implementation while modern clients retain the 2026 path.
+    serveStdio(serverFactory, { legacy: "serve" });
     return;
   }
 

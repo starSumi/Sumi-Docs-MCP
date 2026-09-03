@@ -269,6 +269,97 @@ test("readiness fails closed until a corpus snapshot is supplied", async () => {
   }
 });
 
+test("Streamable HTTP serves the 2025 legacy exchange statelessly", async () => {
+  const handle = await serveStreamableHttp(
+    () => new DocsMcpServer(new DocsVault()).server,
+    {
+      host: "127.0.0.1",
+      port: 0,
+      path: "/mcp",
+      allowedHosts: [],
+      allowedOrigins: [],
+    },
+  );
+
+  const legacyHeaders = {
+    accept: "application/json, text/event-stream",
+    "content-type": "application/json",
+    "mcp-protocol-version": "2025-06-18",
+  };
+  const post = (message: Record<string, unknown>) =>
+    fetch(handle.url, {
+      method: "POST",
+      headers: legacyHeaders,
+      body: JSON.stringify(message),
+    });
+  const readPayload = async <T>(response: Response): Promise<T> => {
+    const body = await response.text();
+    if (response.headers.get("content-type")?.startsWith("text/event-stream")) {
+      const data = body
+        .split("\n")
+        .find((line) => line.startsWith("data: "))
+        ?.slice("data: ".length);
+      assert.ok(data, "legacy SSE response must contain a data event");
+      return JSON.parse(data) as T;
+    }
+    return JSON.parse(body) as T;
+  };
+
+  try {
+    const initialized = await post({
+      jsonrpc: "2.0",
+      id: 1,
+      method: "initialize",
+      params: {
+        protocolVersion: "2025-06-18",
+        capabilities: {},
+        clientInfo: { name: "legacy-http-test", version: "1.0.0" },
+      },
+    });
+    assert.equal(initialized.status, 200);
+    const initializePayload = await readPayload<{
+      result?: { protocolVersion?: string };
+    }>(initialized);
+    assert.equal(initializePayload.result?.protocolVersion, "2025-06-18");
+
+    const notification = await post({
+      jsonrpc: "2.0",
+      method: "notifications/initialized",
+      params: {},
+    });
+    assert.ok([200, 202].includes(notification.status));
+
+    const listed = await post({
+      jsonrpc: "2.0",
+      id: 2,
+      method: "tools/list",
+      params: {},
+    });
+    assert.equal(listed.status, 200);
+    const listPayload = await readPayload<{
+      result?: { tools?: Array<{ name: string }> };
+    }>(listed);
+    assert.deepEqual(
+      new Set(listPayload.result?.tools?.map(({ name }) => name)),
+      new Set(["fetch_doc", "get_openapi_spec", "list_docs", "search_docs"]),
+    );
+
+    const called = await post({
+      jsonrpc: "2.0",
+      id: 3,
+      method: "tools/call",
+      params: { name: "list_docs", arguments: {} },
+    });
+    assert.equal(called.status, 200);
+    const callPayload = await readPayload<{
+      result?: { content?: Array<{ type: string }> };
+    }>(called);
+    assert.equal(callPayload.result?.content?.[0]?.type, "text");
+  } finally {
+    await handle.close();
+  }
+});
+
 test("HTTP startup rejects a stale expected corpus before listening", async () => {
   await assert.rejects(
     execFileAsync(
