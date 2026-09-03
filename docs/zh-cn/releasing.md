@@ -6,6 +6,10 @@ description: 构建、验收、提升和回滚不可变的站点候选产物。
 公开源代码和发布产品是两个不同事件。代码提交可以公开，但 npm 包、已部署站点、
 Git 标签或 GitHub Release 仍然可以不存在。
 
+公共包必须按依赖顺序发布：先发布 `@sumi-labs/corpus-contract`，回读 registry
+中的精确版本、tarball 和可安装性；确认成功后再发布
+`@sumi-labs/docs-mcp`。MCP 包在运行时依赖 contract，不能反过来发布。
+
 使用明确的公开源地址构建生产候选：
 
 ```powershell

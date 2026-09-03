@@ -3,6 +3,11 @@
 This file records user-visible changes. Internal phase notes are retained under
 `docs/history/` and are not release records.
 
+## 0.1.2 - 2026-09-03
+
+- Restricted published `dist/` contents to JavaScript and declaration files;
+  source maps remain local build artifacts.
+
 ## 0.1.1 - 2026-08-23
 
 - Corrected the published-package status and npm scope in operator-facing
