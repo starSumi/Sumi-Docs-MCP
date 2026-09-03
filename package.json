@@ -4,6 +4,11 @@
   "private": true,
   "description": "Human and machine-readable Sumi documentation product workspace.",
   "packageManager": "pnpm@10.26.0",
+  "pnpm": {
+    "overrides": {
+      "fast-uri": "3.1.6"
+    }
+  },
   "volta": {
     "node": "25.5.0",
     "pnpm": "10.26.0"

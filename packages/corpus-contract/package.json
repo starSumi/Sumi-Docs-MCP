@@ -1,6 +1,6 @@
 {
   "name": "@sumi-labs/corpus-contract",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Versioned Sumi documentation corpus schemas and conformance helpers.",
   "publishConfig": {
     "access": "public",
@@ -26,10 +26,12 @@
     "./fixtures/*": "./fixtures/*"
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
     "schemas",
     "fixtures",
-    "README.md"
+    "README.md",
+    "CHANGELOG.md"
   ],
   "scripts": {
     "build": "node --run clean && tsc",
