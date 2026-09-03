@@ -1,6 +1,6 @@
 {
   "name": "@sumi-labs/docs-mcp",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Read-only MCP server for Markdown, MDX, and OpenAPI documentation.",
   "publishConfig": {
     "access": "public",
@@ -105,7 +105,8 @@
     "*.{js,mjs,cjs,json,md,mdx,yaml,yml}": "prettier --check"
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
     "docs/architecture.md",
     "docs/README.md",
     "docs/decisions/0001-astro-starlight-dual-surface.md",

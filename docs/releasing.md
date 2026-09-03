@@ -7,6 +7,11 @@ Source publication and product release are separate events. A commit may be
 public while the deployed site, tag, or GitHub Release does not exist. npm
 package publication is an independent, authenticated gate.
 
+Publish packages in dependency order: release
+`@sumi-labs/corpus-contract` first, verify its exact registry version, tarball,
+and installability, then release `@sumi-labs/docs-mcp`. The MCP package
+consumes the contract at runtime, so its publication must follow that readback.
+
 Build a production candidate with an explicit public origin:
 
 ```powershell

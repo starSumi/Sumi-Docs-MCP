@@ -5,6 +5,11 @@ The current repository automates candidate construction only. npm publication
 is a separate authenticated manual gate; this workflow does not publish the
 package, deploy the documentation site, create a tag, or create a GitHub Release.
 
+Publish workspace packages in dependency order: publish
+`@sumi-labs/corpus-contract` first, then verify its exact registry version,
+tarball, and installability. Publish `@sumi-labs/docs-mcp` only after that
+readback succeeds because it consumes the contract at runtime.
+
 ## Local preflight
 
 Use Node.js 25.5.0 or newer from the workspace root:

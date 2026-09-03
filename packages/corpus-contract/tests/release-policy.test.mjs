@@ -13,4 +13,7 @@ test("package metadata is ready for a public npm release", async () => {
     registry: "https://registry.npmjs.org",
   });
   assert.equal(packageJson.repository.directory, "packages/corpus-contract");
+  assert.equal(packageJson.files.includes("dist"), false);
+  assert.equal(packageJson.files.includes("dist/**/*.js"), true);
+  assert.equal(packageJson.files.includes("dist/**/*.d.ts"), true);
 });
